@@ -1,0 +1,15 @@
+[build]
+  publish = "."
+
+# 將專案 B 的所有 /api 請求透明轉發給 Oracle VM 後端
+[[redirects]]
+  from = "/api/*"
+  to = "https://dashboard.nomadconnection.com.tw/api/:splat"
+  status = 200
+  force = true
+
+# 支援 SPA 單頁應用路由
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

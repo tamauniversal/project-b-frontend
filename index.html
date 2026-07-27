@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>獨立新門戶 ｜ Project B 數位戰略系統</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      --glass-bg: rgba(30, 41, 59, 0.7);
+      --glass-border: rgba(255, 255, 255, 0.1);
+      --accent: #38bdf8;
+      --accent-hover: #0284c7;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --card-bg: rgba(15, 23, 42, 0.6);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', system-ui, sans-serif; }
+    body { background: var(--bg-gradient); color: var(--text-main); min-height: 100vh; display: flex; flex-direction: column; }
+    
+    .navbar { display: flex; justify-content: space-between; align-items: center; padding: 18px 32px; background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(12px); border-bottom: 1px solid var(--glass-border); }
+    .brand { font-size: 1.25rem; font-weight: 700; color: var(--accent); display: flex; align-items: center; gap: 10px; }
+    .brand-badge { font-size: 0.7rem; background: rgba(56, 189, 248, 0.15); color: var(--accent); padding: 3px 8px; border-radius: 6px; border: 1px solid rgba(56, 189, 248, 0.3); }
+    .user-pill { font-size: 0.85rem; color: var(--text-muted); display: flex; align-items: center; gap: 12px; }
+    .btn-logout { background: none; border: 1px solid var(--glass-border); color: var(--text-muted); padding: 6px 14px; border-radius: 8px; cursor: pointer; transition: all 0.2s; }
+    .btn-logout:hover { color: var(--text-main); border-color: var(--text-muted); }
+
+    .container { max-width: 1100px; margin: 40px auto; padding: 0 20px; flex: 1; width: 100%; }
+    
+    /* Login Modal Overlay */
+    .login-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(16px); display: flex; justify-content: center; align-items: center; z-index: 1000; }
+    .login-card { background: var(--glass-bg); border: 1px solid var(--glass-border); padding: 40px; border-radius: 20px; width: 100%; max-width: 420px; box-shadow: 0 20px 40px rgba(0,0,0,0.4); text-align: center; }
+    .login-title { font-size: 1.6rem; font-weight: 700; margin-bottom: 8px; }
+    .login-sub { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 28px; }
+    .form-group { margin-bottom: 20px; text-align: left; }
+    .form-label { display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 8px; }
+    .form-input { width: 100%; padding: 12px 16px; background: rgba(15, 23, 42, 0.8); border: 1px solid var(--glass-border); border-radius: 10px; color: var(--text-main); font-size: 0.95rem; outline: none; transition: border-color 0.2s; }
+    .form-input:focus { border-color: var(--accent); }
+    .btn-primary { width: 100%; padding: 12px; background: var(--accent); color: #0f172a; font-weight: 600; border: none; border-radius: 10px; font-size: 0.95rem; cursor: pointer; transition: background 0.2s; }
+    .btn-primary:hover { background: var(--accent-hover); }
+    .error-msg { color: #ef4444; font-size: 0.85rem; margin-top: 14px; display: none; }
+
+    /* Dashboard UI */
+    .dashboard-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 28px; }
+    .page-title { font-size: 1.5rem; font-weight: 700; }
+    .btn-refresh { background: var(--glass-bg); border: 1px solid var(--glass-border); color: var(--text-main); padding: 10px 18px; border-radius: 10px; font-size: 0.88rem; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.2s; }
+    .btn-refresh:hover { border-color: var(--accent); color: var(--accent); }
+
+    .matrix-card { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 16px; padding: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+    .table-container { overflow-x: auto; margin-top: 16px; }
+    table { width: 100%; border-collapse: collapse; text-align: left; }
+    th { padding: 14px 16px; border-bottom: 1px solid var(--glass-border); font-size: 0.8rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; }
+    td { padding: 16px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.9rem; }
+    tr:last-child td { border-bottom: none; }
+    .badge-ind { background: rgba(56, 189, 248, 0.1); color: var(--accent); padding: 4px 10px; border-radius: 6px; font-size: 0.78rem; font-weight: 500; }
+    .stat-val { font-weight: 600; color: var(--accent); }
+    
+    footer { text-align: center; padding: 24px; font-size: 0.8rem; color: var(--text-muted); border-top: 1px solid var(--glass-border); margin-top: auto; }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navigation Bar -->
+  <header class="navbar">
+    <div class="brand">
+      Project B 專屬門戶
+      <span class="brand-badge">Netlify 獨立前端</span>
+    </div>
+    <div class="user-pill" id="userPill" style="display: none;">
+      <span id="userNameTxt">帳號載入中...</span>
+      <button class="btn-logout" onclick="handleLogout()">登出</button>
+    </div>
+  </header>
+
+  <!-- Login Modal Overlay -->
+  <div class="login-overlay" id="loginOverlay">
+    <div class="login-card">
+      <div class="login-title">Project B 系統登入</div>
+      <div class="login-sub">登入後將透過 API 連線至 Oracle 主機讀取資料</div>
+      <form onsubmit="handleLogin(event)">
+        <div class="form-group">
+          <label class="form-label">帳號 Username</label>
+          <input type="text" id="usernameInput" class="form-input" placeholder="例: project_b_user" value="project_b_user" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">密碼 Password</label>
+          <input type="password" id="passwordInput" class="form-input" placeholder="輸入密碼" value="password123" required>
+        </div>
+        <button type="submit" class="btn-primary" id="loginBtn">登入專案系統</button>
+        <div class="error-msg" id="errorMsg">帳號或密碼錯誤</div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Main Dashboard Content -->
+  <main class="container">
+    <div class="dashboard-header">
+      <div>
+        <div class="page-title">戰略關鍵字矩陣</div>
+        <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">由 Oracle Cloud API 實時提供數據分析</div>
+      </div>
+      <button class="btn-refresh" onclick="fetchKeywords()">
+        🔄 重新整理資料
+      </button>
+    </div>
+
+    <div class="matrix-card">
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>自訂關鍵字</th>
+              <th>產業別</th>
+              <th>Google AIO 總引用數</th>
+              <th>狀態</th>
+            </tr>
+          </thead>
+          <tbody id="keywordTableBody">
+            <tr>
+              <td colspan="4" style="text-align: center; color: var(--text-muted); padding: 30px;">請先登入以載入資料...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    © Project B Netlify 獨立門戶 · 底層對接 Oracle Cloud VM 核心 API 引擎
+  </footer>
+
+  <script>
+    async function checkAuth() {
+      try {
+        const res = await fetch('/api/user/info');
+        const data = await res.json();
+        if (res.ok && data.success && data.user) {
+          showDashboard(data.user);
+        } else {
+          showLogin();
+        }
+      } catch (err) {
+        showLogin();
+      }
+    }
+
+    async function handleLogin(e) {
+      e.preventDefault();
+      const u = document.getElementById('usernameInput').value;
+      const p = document.getElementById('passwordInput').value;
+      const btn = document.getElementById('loginBtn');
+      const err = document.getElementById('errorMsg');
+      
+      btn.innerText = '驗證中...';
+      err.style.display = 'none';
+
+      try {
+        const res = await fetch('/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: u, password: p })
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+          showDashboard(data.user || { username: u });
+        } else {
+          err.innerText = data.message || '登入失敗，請確認帳密';
+          err.style.display = 'block';
+        }
+      } catch (e) {
+        err.innerText = '無法連線至 API 伺服器';
+        err.style.display = 'block';
+      } finally {
+        btn.innerText = '登入專案系統';
+      }
+    }
+
+    async function handleLogout() {
+      try {
+        await fetch('/api/logout', { method: 'POST' });
+      } catch(e) {}
+      showLogin();
+    }
+
+    function showDashboard(user) {
+      document.getElementById('loginOverlay').style.display = 'none';
+      document.getElementById('userPill').style.display = 'flex';
+      document.getElementById('userNameTxt').innerText = `使用者: ${user.username} (${user.role || 'user'})`;
+      fetchKeywords();
+    }
+
+    function showLogin() {
+      document.getElementById('loginOverlay').style.display = 'flex';
+      document.getElementById('userPill').style.display = 'none';
+    }
+
+    async function fetchKeywords() {
+      const tbody = document.getElementById('keywordTableBody');
+      tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--text-muted); padding: 30px;">資料載入中...</td></tr>';
+      
+      try {
+        const res = await fetch('/api/aio-keywords');
+        const data = await res.json();
+        if (res.ok && data.success && Array.isArray(data.rows)) {
+          if (data.rows.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--text-muted); padding: 30px;">尚無設定任何戰略關鍵字</td></tr>';
+            return;
+          }
+          tbody.innerHTML = data.rows.map(r => `
+            <tr>
+              <td style="font-weight: 600;">${r.keyword || '-'}</td>
+              <td><span class="badge-ind">${r.industry || '未分類'}</span></td>
+              <td class="stat-val">${r.totalCitations || 0} 條引用</td>
+              <td style="color: #34d399;">● 運作中 (共享 Oracle 數據)</td>
+            </tr>
+          `).join('');
+        } else {
+          tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: #ef4444; padding: 30px;">無法讀取關鍵字資料</td></tr>';
+        }
+      } catch (err) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: #ef4444; padding: 30px;">網路連線異常</td></tr>';
+      }
+    }
+
+    // Check auth on load
+    checkAuth();
+  </script>
+</body>
+</html>
