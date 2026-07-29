@@ -1493,7 +1493,7 @@ function App() {
         const q = new URLSearchParams(window.location.search);
         const hasScan = q.get('scan') !== null;
         const hasLogin = q.get('login') !== null || q.get('view') === 'auth';
-        if (!hasScan && !hasLogin) {
+        if (!hasScan && !hasLogin && window.location.pathname !== '/' && window.location.pathname !== '/index.html') {
           window.location.href = '/';
         }
       } catch (e) {}
