@@ -9698,29 +9698,56 @@ function App() {
     if (choice === '1') {
       subject = `數位戰略雷達｜AIO 流量穿透與 AEO 健檢報表｜${lensTxt}｜${new Date().toLocaleDateString()}`;
       const rows = aioMatrixRows || [];
-      const totalKws = rows.length;
-      let totalCitationsAll = 0;
-      let targetCitationsAll = 0;
-      let aeoScores = [];
-      let llmScores = [];
-      rows.forEach(r => {
-        totalCitationsAll += r.totalCitations || 0;
-        const bd = r.breakdown || [];
-        if (lensTxt !== '全部標的') {
-          const item = bd.find(b => b.name === lensTxt);
-          if (item) targetCitationsAll += item.count || 0;
-        } else {
-          const maxItem = bd.reduce((m, x) => x.count > m.count ? x : m, {
-            count: 0
-          });
-          targetCitationsAll += maxItem.count;
+      const focus = aioTargetBank && aioTargetBank !== '全部標的' ? aioTargetBank : null;
+      const covRows = rows.filter(r => (r.totalCitations || 0) > 0);
+      const bankCov = r => {
+        const t = r.totalCitations || 0;
+        if (!t) return 0;
+        if (focus) {
+          const my = (r.breakdown || []).find(x => x.name === focus);
+          return my ? Math.round(my.count / t * 100) : 0;
         }
-        if (r.aeo_score != null) aeoScores.push(r.aeo_score);
-        if (r.llm && r.llm.score != null) llmScores.push(r.llm.score);
+        const maxItem = (r.breakdown || []).reduce((m, x) => x.count > m.count ? x : m, {
+          count: 0
+        });
+        return Math.round(maxItem.count / t * 100);
+      };
+      const avgCov = covRows.length ? Math.round(covRows.reduce((a, r) => a + bankCov(r), 0) / covRows.length) : 0;
+      const aeoVals = rows.map(r => r.aeo_score).filter(a => typeof a === 'number');
+      const avgScore = aeoVals.length ? Math.round(aeoVals.reduce((a, b) => a + b, 0) / aeoVals.length) : null;
+      let otherSum = 0,
+        totSum = 0;
+      rows.forEach(r => {
+        const t = r.totalCitations || 0;
+        if (!t) return;
+        const o = (r.breakdown || []).find(x => x.other);
+        otherSum += o ? o.count : 0;
+        totSum += t;
       });
-      const avgAeo = aeoScores.length ? Math.round(aeoScores.reduce((a, b) => a + b, 0) / aeoScores.length) : null;
-      const avgLlm = llmScores.length ? Math.round(llmScores.reduce((a, b) => a + b, 0) / llmScores.length) : null;
-      const covPct = totalCitationsAll ? Math.round(targetCitationsAll / totalCitationsAll * 100) : 0;
+      const otherShare = totSum ? Math.round(otherSum / totSum * 100) : 0;
+      const gapCount = focus ? rows.filter(r => {
+        const mine = (r.breakdown || []).find(x => x.name === focus);
+        const mc = mine ? mine.count : 0;
+        const comps = (r.breakdown || []).filter(x => !x.other && x.name !== focus && (x.count || 0) > 0);
+        return mc === 0 && comps.length > 0;
+      }).length : 0;
+      const flags = [];
+      if (!focus && otherShare >= 50) flags.push({
+        t: `AI 有 ${otherShare}% 引用流向第三方媒體（非官網）`,
+        bad: false
+      });
+      if (focus && gapCount > 0) flags.push({
+        t: `${gapCount} 組關鍵字 0 引用、競品已搶下`,
+        bad: true
+      });
+      if (avgScore !== null && avgScore < 40) flags.push({
+        t: `平均 AEO ${avgScore} 分偏弱、破綻多`,
+        bad: false
+      });
+      const aeoPhrase = avgScore === null ? 'AEO 健檢尚未掃描' : `AEO 健檢 ${avgScore} 分`;
+      const headline = focus ? `主視角「${focus}」：${rows.length} 組關鍵字，AIO 覆蓋率 ${avgCov}%、${aeoPhrase}；引用版位約 ${Math.max(0, 100 - avgCov)}% 由媒體與競品拿走。` : `本期佈局 ${rows.length} 組戰略關鍵字，平均 AIO 覆蓋率 ${avgCov}%、${aeoPhrase}。`;
+      const flagBadgesHtml = flags.length ? flags.map(f => `<span style="font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 20px; color: ${f.bad ? '#ffffff' : '#b5544f'}; background: ${f.bad ? '#b5544f' : '#fbeaea'}; border: 1px solid ${f.bad ? '#b5544f' : '#eccccc'}; margin-left: 6px;">⚠ ${esc(f.t)}</span>`).join('') : `<span style="font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 20px; color: #4e6e58; background: #e8f3ec; border: 1px solid #c8dbcc;">✓ 無重大引用缺口</span>`;
+      const totalCitesAll = rows.reduce((a, r) => a + (r.totalCitations || 0), 0);
       const tableRowsHtml = rows.map(r => {
         const bd = r.breakdown || [];
         const totalC = r.totalCitations || 0;
@@ -9754,33 +9781,49 @@ function App() {
               <div style="font-size: 20px; font-weight: 700; color: #38bdf8;">數位戰略雷達 ｜ AIO 流量穿透與 AEO 健檢報表</div>
               <div style="font-size: 13px; color: #94a3b8; margin-top: 6px;">戰略主視角：<b style="color: #f8fafc;">${esc(lensTxt)}</b> ｜ 產生時間：${esc(nowStr)}</div>
             </div>
-            <div style="padding: 24px 28px; background: #f8fafc; border-bottom: 1px solid #e2e8f0;">
+
+            <!-- ⚡ 戰情快報 & 引用缺口分析 -->
+            <div style="padding: 20px 28px 0 28px;">
+              <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-left: 4px solid #5c7f9c; border-radius: 10px; padding: 14px 18px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+                  <span style="font-size: 13px; font-weight: 700; color: #5c7f9c;">⚡ 戰情快報</span>
+                  <div>${flagBadgesHtml}</div>
+                </div>
+                <div style="font-size: 13px; color: #334155; margin-top: 8px; line-height: 1.6;">${esc(headline)}</div>
+              </div>
+            </div>
+
+            <!-- 現在整體狀況如何？ -->
+            <div style="padding: 20px 28px 24px 28px;">
+              <div style="font-size: 14px; font-weight: 700; color: #0f172a; margin-bottom: 12px;">現在整體狀況如何？</div>
               <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse;">
                 <tr>
-                  <td width="23%" style="padding: 12px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; text-align: center;">
+                  <td width="23%" style="padding: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; text-align: center;">
                     <div style="font-size: 11px; color: #64748b; font-weight: 600;">戰略關鍵字數</div>
-                    <div style="font-size: 20px; font-weight: 700; color: #0284c7; margin-top: 4px;">${totalKws} 組</div>
+                    <div style="font-size: 20px; font-weight: 700; color: #0284c7; margin-top: 4px;">${rows.length} 組</div>
                   </td>
                   <td width="2%" style="font-size:0;">&nbsp;</td>
-                  <td width="23%" style="padding: 12px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; text-align: center;">
+                  <td width="23%" style="padding: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; text-align: center;">
+                    <div style="font-size: 11px; color: #64748b; font-weight: 600;">累計引用筆數</div>
+                    <div style="font-size: 20px; font-weight: 700; color: #0f172a; margin-top: 4px;">${totalCitesAll} 條</div>
+                  </td>
+                  <td width="2%" style="font-size:0;">&nbsp;</td>
+                  <td width="23%" style="padding: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; text-align: center;">
                     <div style="font-size: 11px; color: #64748b; font-weight: 600;">主視角 AIO 覆蓋率</div>
-                    <div style="font-size: 20px; font-weight: 700; color: ${covPct > 0 ? '#10b981' : '#f59e0b'}; margin-top: 4px;">${covPct}%</div>
+                    <div style="font-size: 20px; font-weight: 700; color: ${avgCov > 0 ? '#10b981' : '#f59e0b'}; margin-top: 4px;">${avgCov}%</div>
                   </td>
                   <td width="2%" style="font-size:0;">&nbsp;</td>
-                  <td width="23%" style="padding: 12px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; text-align: center;">
-                    <div style="font-size: 11px; color: #64748b; font-weight: 600;">LLM 大模型滲透率</div>
-                    <div style="font-size: 20px; font-weight: 700; color: #3b82f6; margin-top: 4px;">${avgLlm != null ? avgLlm + '%' : '—'}</div>
-                  </td>
-                  <td width="2%" style="font-size:0;">&nbsp;</td>
-                  <td width="23%" style="padding: 12px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; text-align: center;">
+                  <td width="23%" style="padding: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; text-align: center;">
                     <div style="font-size: 11px; color: #64748b; font-weight: 600;">平均 AEO 健檢分</div>
-                    <div style="font-size: 20px; font-weight: 700; color: #8b5cf6; margin-top: 4px;">${avgAeo != null ? avgAeo + '分' : '—'}</div>
+                    <div style="font-size: 20px; font-weight: 700; color: #8b5cf6; margin-top: 4px;">${avgScore != null ? avgScore + '分' : '—'}</div>
                   </td>
                 </tr>
               </table>
             </div>
-            <div style="padding: 24px 28px;">
-              <h3 style="margin: 0 0 16px 0; font-size: 15px; font-weight: 700; color: #0f172a;">全盤戰略關鍵字 AIO / AEO 實測明細</h3>
+
+            <!-- 明細表格 -->
+            <div style="padding: 0 28px 28px 28px;">
+              <h3 style="margin: 0 0 14px 0; font-size: 14px; font-weight: 700; color: #0f172a;">全盤戰略關鍵字 AIO / AEO 實測明細</h3>
               <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse; font-size: 13px;">
                 <thead>
                   <tr style="background: #f1f5f9; text-align: left; color: #475569;">
@@ -9795,6 +9838,7 @@ function App() {
                 <tbody>${tableRowsHtml}</tbody>
               </table>
             </div>
+
             <div style="padding: 18px 28px; background: #f8fafc; border-top: 1px solid #e2e8f0; font-size: 12px; color: #94a3b8; text-align: center;">
               數位戰略雷達 ｜ 此信由系統自動生成寄送，資料來源同網頁版即時實測數據。
             </div>
