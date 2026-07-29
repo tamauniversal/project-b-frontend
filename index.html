@@ -9715,6 +9715,36 @@ function App() {
       const avgCov = covRows.length ? Math.round(covRows.reduce((a, r) => a + bankCov(r), 0) / covRows.length) : 0;
       const aeoVals = rows.map(r => r.aeo_score).filter(a => typeof a === 'number');
       const avgScore = aeoVals.length ? Math.round(aeoVals.reduce((a, b) => a + b, 0) / aeoVals.length) : null;
+      const llmTarget = r => {
+        const per = r.llm && r.llm.perBrand || [];
+        if (focus) {
+          return per.find(x => x.name === focus) || {
+            name: focus,
+            penetration: 0,
+            absent: true
+          };
+        }
+        return per.find(x => !x.other) || null;
+      };
+      const llmBand = pen => {
+        if (pen >= 60) return {
+          label: '絕對強勢區',
+          color: '#5d9e69'
+        };
+        if (pen >= 30) return {
+          label: '語意拉鋸中',
+          color: '#cba369'
+        };
+        return {
+          label: '大模型記憶盲區',
+          color: '#c56969'
+        };
+      };
+      const llmPens = rows.map(r => {
+        const lt = llmTarget(r);
+        return lt ? lt.penetration || 0 : null;
+      }).filter(v => v !== null);
+      const avgLlm = llmPens.length ? Math.round(llmPens.reduce((a, b) => a + b, 0) / llmPens.length) : null;
       let otherSum = 0,
         totSum = 0;
       rows.forEach(r => {
@@ -9762,7 +9792,23 @@ function App() {
           leadingSrc = `${sortedBd[0].name} ${sortedBd[0].count}條 (${totalC ? Math.round(sortedBd[0].count / totalC * 100) : 0}%)`;
         }
         const kwCovPct = totalC ? Math.round(targetCount / totalC * 100) : 0;
-        const llmTxt = r.llm ? `${r.llm.score || 0}% ${r.llm.label || ''}` : '尚未實測';
+        const lt = llmTarget(r);
+        let llmTxt = '未實測';
+        let llmCol = '#8e979e';
+        if (r.llm && r.llm.perBrand && r.llm.perBrand.length) {
+          if (lt) {
+            const pen = lt.penetration || 0;
+            const band = llmBand(pen);
+            llmTxt = `${pen}% ${band.label}`;
+            llmCol = band.color;
+          } else {
+            llmTxt = '大模型未點名(記憶盲區)';
+            llmCol = '#c56969';
+          }
+        } else if (r.llm && r.llm.source === 'none') {
+          llmTxt = '未設定 LLM 金鑰';
+          llmCol = '#c56969';
+        }
         const aeoTxt = r.aeo_score != null ? `${r.aeo_score}分` : '未掃描';
         return `<tr style="border-bottom: 1px solid #f0f0ec;">
               <td style="padding: 10px 12px; font-weight: 600; color: #33393e;">${esc(r.keyword)}</td>
@@ -9772,7 +9818,7 @@ function App() {
                 <div style="font-weight: 700; color: ${kwCovPct > 0 ? '#5d9e69' : '#c56969'};">${lensTxt} 覆蓋 ${kwCovPct}%</div>
                 <div style="font-size: 12px; color: #626a70; margin-top: 2px;">領先來源：${esc(leadingSrc)}</div>
               </td>
-              <td style="padding: 10px 12px;"><span style="font-weight: 600; color: #4981af;">${esc(llmTxt)}</span></td>
+              <td style="padding: 10px 12px;"><span style="font-weight: 600; color: ${llmCol};">${esc(llmTxt)}</span></td>
               <td style="padding: 10px 12px; text-align: center; font-weight: 700; color: #8c6fb1;">${esc(aeoTxt)}</td>
             </tr>`;
       }).join('');
@@ -9825,8 +9871,8 @@ function App() {
                       <div style="font-size: 22px; font-weight: 700; color: ${avgCov > 0 ? '#5d9e69' : '#c56969'}; margin-top: 4px;">${avgCov}%</div>
                     </td>
                     <td width="25%" style="padding: 14px 12px; background: #ffffff; border: 1px solid #d1d1cc; border-radius: 8px; text-align: center;">
-                      <div style="font-size: 12px; color: #626a70; font-weight: 600;">平均 AEO 健檢分</div>
-                      <div style="font-size: 22px; font-weight: 700; color: #8c6fb1; margin-top: 4px;">${avgScore != null ? avgScore + '分' : '—'}</div>
+                      <div style="font-size: 12px; color: #626a70; font-weight: 600;">LLM 大模型滲透率</div>
+                      <div style="font-size: 22px; font-weight: 700; color: #4981af; margin-top: 4px;">${avgLlm != null ? avgLlm + '%' : '—'}</div>
                     </td>
                   </tr>
                 </table>
