@@ -9746,7 +9746,7 @@ function App() {
       });
       const aeoPhrase = avgScore === null ? 'AEO 健檢尚未掃描' : `AEO 健檢 ${avgScore} 分`;
       const headline = focus ? `主視角「${focus}」：${rows.length} 組關鍵字，AIO 覆蓋率 ${avgCov}%、${aeoPhrase}；引用版位約 ${Math.max(0, 100 - avgCov)}% 由媒體與競品拿走。` : `本期佈局 ${rows.length} 組戰略關鍵字，平均 AIO 覆蓋率 ${avgCov}%、${aeoPhrase}。`;
-      const flagBadgesHtml = flags.length ? flags.map(f => `<span style="font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 20px; color: ${f.bad ? '#ffffff' : '#b5544f'}; background: ${f.bad ? '#b5544f' : '#fbeaea'}; border: 1px solid ${f.bad ? '#b5544f' : '#eccccc'}; margin-left: 6px;">⚠ ${esc(f.t)}</span>`).join('') : `<span style="font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 20px; color: #4e6e58; background: #e8f3ec; border: 1px solid #c8dbcc;">✓ 無重大引用缺口</span>`;
+      const flagBadgesHtml = flags.length ? flags.map(f => `<span style="font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 20px; color: ${f.bad ? '#c56969' : '#c56969'}; background: ${f.bad ? '#fcefef' : '#fcefef'}; border: 1px solid #f1c7c7; margin-left: 6px;">⚠ ${esc(f.t)}</span>`).join('') : `<span style="font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 20px; color: #5d9e69; background: #eef7f0; border: 1px solid #c1e2c8;">✓ 無重大引用缺口</span>`;
       const totalCitesAll = rows.reduce((a, r) => a + (r.totalCitations || 0), 0);
       const tableRowsHtml = rows.map(r => {
         const bd = r.breakdown || [];
@@ -9764,83 +9764,95 @@ function App() {
         const kwCovPct = totalC ? Math.round(targetCount / totalC * 100) : 0;
         const llmTxt = r.llm ? `${r.llm.score || 0}% ${r.llm.label || ''}` : '尚未實測';
         const aeoTxt = r.aeo_score != null ? `${r.aeo_score}分` : '未掃描';
-        return `<tr style="border-bottom: 1px solid #edf2f7;">
-              <td style="padding: 12px 14px; font-weight: 600; color: #1e293b;">${esc(r.keyword)}</td>
-              <td style="padding: 12px 14px;"><span style="background: #f0f9ff; color: #0284c7; border: 1px solid #bae6fd; padding: 3px 8px; border-radius: 6px; font-size: 12px; font-weight: 500;">${esc(r.industry || '未分類')}</span></td>
-              <td style="padding: 12px 14px; font-weight: 600; color: #0f172a;">${totalC} 條引用</td>
-              <td style="padding: 12px 14px;">
-                <div style="font-weight: 600; color: ${kwCovPct > 0 ? '#10b981' : '#ef4444'};">${lensTxt} 覆蓋 ${kwCovPct}%</div>
-                <div style="font-size: 12px; color: #64748b; margin-top: 2px;">領先來源：${esc(leadingSrc)}</div>
+        return `<tr style="border-bottom: 1px solid #f0f0ec;">
+              <td style="padding: 10px 12px; font-weight: 600; color: #33393e;">${esc(r.keyword)}</td>
+              <td style="padding: 10px 12px;"><span style="background: #f4f4f0; color: #626a70; border: 1px solid #d8d8d0; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 500;">${esc(r.industry || '未分類')}</span></td>
+              <td style="padding: 10px 12px; font-weight: 600; color: #33393e;">${totalC} 條引用</td>
+              <td style="padding: 10px 12px;">
+                <div style="font-weight: 700; color: ${kwCovPct > 0 ? '#5d9e69' : '#c56969'};">${lensTxt} 覆蓋 ${kwCovPct}%</div>
+                <div style="font-size: 12px; color: #626a70; margin-top: 2px;">領先來源：${esc(leadingSrc)}</div>
               </td>
-              <td style="padding: 12px 14px;"><span style="font-weight: 600; color: #3b82f6;">${esc(llmTxt)}</span></td>
-              <td style="padding: 12px 14px; text-align: center; font-weight: 600; color: #8b5cf6;">${esc(aeoTxt)}</td>
+              <td style="padding: 10px 12px;"><span style="font-weight: 600; color: #4981af;">${esc(llmTxt)}</span></td>
+              <td style="padding: 10px 12px; text-align: center; font-weight: 700; color: #8c6fb1;">${esc(aeoTxt)}</td>
             </tr>`;
       }).join('');
-      html = `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #1e293b; max-width: 780px; margin: 0 auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
-            <div style="background: #0f172a; padding: 24px 28px; color: #f8fafc;">
-              <div style="font-size: 20px; font-weight: 700; color: #38bdf8;">數位戰略雷達 ｜ AIO 流量穿透與 AEO 健檢報表</div>
-              <div style="font-size: 13px; color: #94a3b8; margin-top: 6px;">戰略主視角：<b style="color: #f8fafc;">${esc(lensTxt)}</b> ｜ 產生時間：${esc(nowStr)}</div>
-            </div>
-
-            <!-- ⚡ 戰情快報 & 引用缺口分析 -->
-            <div style="padding: 20px 28px 0 28px;">
-              <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-left: 4px solid #5c7f9c; border-radius: 10px; padding: 14px 18px;">
-                <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
-                  <span style="font-size: 13px; font-weight: 700; color: #5c7f9c;">⚡ 戰情快報</span>
-                  <div>${flagBadgesHtml}</div>
-                </div>
-                <div style="font-size: 13px; color: #334155; margin-top: 8px; line-height: 1.6;">${esc(headline)}</div>
-              </div>
-            </div>
-
-            <!-- 現在整體狀況如何？ -->
-            <div style="padding: 20px 28px 24px 28px;">
-              <div style="font-size: 14px; font-weight: 700; color: #0f172a; margin-bottom: 12px;">現在整體狀況如何？</div>
-              <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse;">
+      html = `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background: #ebebe9; padding: 24px 12px; color: #33393e;">
+            <div style="max-width: 780px; margin: 0 auto; background: #ffffff; border: 1px solid #d1d1cc; border-radius: 12px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+              
+              <!-- 頂部品牌 Bar -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse; border-bottom: 1px solid #f0f0ec; padding-bottom: 16px; margin-bottom: 20px;">
                 <tr>
-                  <td width="23%" style="padding: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; text-align: center;">
-                    <div style="font-size: 11px; color: #64748b; font-weight: 600;">戰略關鍵字數</div>
-                    <div style="font-size: 20px; font-weight: 700; color: #0284c7; margin-top: 4px;">${rows.length} 組</div>
+                  <td align="left" style="vertical-align: middle;">
+                    <div style="font-size: 20px; font-weight: 700; color: #33393e; letter-spacing: 0.02em;">數位戰略雷達</div>
+                    <div style="font-size: 12px; color: #626a70; margin-top: 2px;">AIO 流量穿透矩陣 × App 更版輿情矩陣</div>
                   </td>
-                  <td width="2%" style="font-size:0;">&nbsp;</td>
-                  <td width="23%" style="padding: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; text-align: center;">
-                    <div style="font-size: 11px; color: #64748b; font-weight: 600;">累計引用筆數</div>
-                    <div style="font-size: 20px; font-weight: 700; color: #0f172a; margin-top: 4px;">${totalCitesAll} 條</div>
-                  </td>
-                  <td width="2%" style="font-size:0;">&nbsp;</td>
-                  <td width="23%" style="padding: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; text-align: center;">
-                    <div style="font-size: 11px; color: #64748b; font-weight: 600;">主視角 AIO 覆蓋率</div>
-                    <div style="font-size: 20px; font-weight: 700; color: ${avgCov > 0 ? '#10b981' : '#f59e0b'}; margin-top: 4px;">${avgCov}%</div>
-                  </td>
-                  <td width="2%" style="font-size:0;">&nbsp;</td>
-                  <td width="23%" style="padding: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; text-align: center;">
-                    <div style="font-size: 11px; color: #64748b; font-weight: 600;">平均 AEO 健檢分</div>
-                    <div style="font-size: 20px; font-weight: 700; color: #8b5cf6; margin-top: 4px;">${avgScore != null ? avgScore + '分' : '—'}</div>
+                  <td align="right" style="vertical-align: middle;">
+                    <div style="font-size: 12px; color: #626a70;">戰略主視角：<b style="color: #4981af;">${esc(lensTxt)}</b></div>
+                    <div style="font-size: 11px; color: #8e979e; margin-top: 2px;">產生時間：${esc(nowStr)}</div>
                   </td>
                 </tr>
               </table>
-            </div>
 
-            <!-- 明細表格 -->
-            <div style="padding: 0 28px 28px 28px;">
-              <h3 style="margin: 0 0 14px 0; font-size: 14px; font-weight: 700; color: #0f172a;">全盤戰略關鍵字 AIO / AEO 實測明細</h3>
-              <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse; font-size: 13px;">
-                <thead>
-                  <tr style="background: #f1f5f9; text-align: left; color: #475569;">
-                    <th style="padding: 10px 14px; font-weight: 600;">自訂關鍵字</th>
-                    <th style="padding: 10px 14px; font-weight: 600;">產業別</th>
-                    <th style="padding: 10px 14px; font-weight: 600;">Google AIO 引用</th>
-                    <th style="padding: 10px 14px; font-weight: 600;">主視角覆蓋 / 領先來源</th>
-                    <th style="padding: 10px 14px; font-weight: 600;">LLM 滲透率</th>
-                    <th style="padding: 10px 14px; font-weight: 600; text-align: center;">AEO 健檢</th>
+              <!-- ⚡ 戰情快報 -->
+              <div style="background: #fafaf9; border: 1px solid #d1d1cc; border-left: 3px solid #4981af; border-radius: 10px; padding: 12px 16px; margin-bottom: 20px;">
+                <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse;">
+                  <tr>
+                    <td align="left"><span style="font-size: 13px; font-weight: 700; color: #4981af;">⚡ 戰情快報</span></td>
+                    <td align="right">${flagBadgesHtml}</td>
                   </tr>
-                </thead>
-                <tbody>${tableRowsHtml}</tbody>
-              </table>
-            </div>
+                </table>
+                <div style="font-size: 13px; color: #33393e; margin-top: 8px; line-height: 1.6;">${esc(headline)}</div>
+              </div>
 
-            <div style="padding: 18px 28px; background: #f8fafc; border-top: 1px solid #e2e8f0; font-size: 12px; color: #94a3b8; text-align: center;">
-              數位戰略雷達 ｜ 此信由系統自動生成寄送，資料來源同網頁版即時實測數據。
+              <!-- 現在整體狀況如何？ -->
+              <div style="margin-bottom: 24px;">
+                <div style="margin-bottom: 12px;">
+                  <span style="font-size: 15px; font-weight: 700; color: #33393e;">現在整體狀況如何？</span>
+                  <span style="font-size: 12px; color: #626a70; margin-left: 8px;">戰略關鍵字數 · 累計引用 · 覆蓋率 · AEO 健檢分</span>
+                </div>
+                <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse: separate; border-spacing: 10px 0; margin: 0 -10px;">
+                  <tr>
+                    <td width="25%" style="padding: 14px 12px; background: #ffffff; border: 1px solid #d1d1cc; border-radius: 8px; text-align: center;">
+                      <div style="font-size: 12px; color: #626a70; font-weight: 600;">戰略關鍵字數</div>
+                      <div style="font-size: 22px; font-weight: 700; color: #4981af; margin-top: 4px;">${rows.length} 組</div>
+                    </td>
+                    <td width="25%" style="padding: 14px 12px; background: #ffffff; border: 1px solid #d1d1cc; border-radius: 8px; text-align: center;">
+                      <div style="font-size: 12px; color: #626a70; font-weight: 600;">累計引用筆數</div>
+                      <div style="font-size: 22px; font-weight: 700; color: #33393e; margin-top: 4px;">${totalCitesAll} 條</div>
+                    </td>
+                    <td width="25%" style="padding: 14px 12px; background: #ffffff; border: 1px solid #d1d1cc; border-radius: 8px; text-align: center;">
+                      <div style="font-size: 12px; color: #626a70; font-weight: 600;">主視角 AIO 覆蓋率</div>
+                      <div style="font-size: 22px; font-weight: 700; color: ${avgCov > 0 ? '#5d9e69' : '#c56969'}; margin-top: 4px;">${avgCov}%</div>
+                    </td>
+                    <td width="25%" style="padding: 14px 12px; background: #ffffff; border: 1px solid #d1d1cc; border-radius: 8px; text-align: center;">
+                      <div style="font-size: 12px; color: #626a70; font-weight: 600;">平均 AEO 健檢分</div>
+                      <div style="font-size: 22px; font-weight: 700; color: #8c6fb1; margin-top: 4px;">${avgScore != null ? avgScore + '分' : '—'}</div>
+                    </td>
+                  </tr>
+                </table>
+              </div>
+
+              <!-- 明細表格 -->
+              <div>
+                <div style="font-size: 15px; font-weight: 700; color: #33393e; margin-bottom: 12px;">全盤戰略關鍵字 AIO / AEO 實測明細</div>
+                <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse; font-size: 13px;">
+                  <thead>
+                    <tr style="background: #f4f7fa; text-align: left; color: #626a70; border-bottom: 1px solid #d1d1cc;">
+                      <th style="padding: 10px 12px; font-weight: 600;">自訂關鍵字</th>
+                      <th style="padding: 10px 12px; font-weight: 600;">產業別</th>
+                      <th style="padding: 10px 12px; font-weight: 600;">Google AIO 引用</th>
+                      <th style="padding: 10px 12px; font-weight: 600;">主視角覆蓋 / 領先來源</th>
+                      <th style="padding: 10px 12px; font-weight: 600;">LLM 滲透率</th>
+                      <th style="padding: 10px 12px; font-weight: 600; text-align: center;">AEO 健檢</th>
+                    </tr>
+                  </thead>
+                  <tbody>${tableRowsHtml}</tbody>
+                </table>
+              </div>
+
+              <div style="padding-top: 20px; margin-top: 24px; border-top: 1px solid #f0f0ec; font-size: 12px; color: #8e979e; text-align: center;">
+                數位戰略雷達 ｜ 此信由系統自動生成寄送，資料來源同網頁版即時實測數據。
+              </div>
             </div>
           </div>`;
     } else {
