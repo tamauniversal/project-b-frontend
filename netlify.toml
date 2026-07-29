@@ -8,6 +8,19 @@
   status = 200
   force = true
 
+# 將靜態數據檔透明轉發給 Oracle VM 後端
+[[redirects]]
+  from = "/appstore_versions.json"
+  to = "https://dashboard.nomadconnection.com.tw/appstore_versions.json"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/public_stats.json"
+  to = "https://dashboard.nomadconnection.com.tw/public_stats.json"
+  status = 200
+  force = true
+
 # 支援 SPA 單頁應用路由
 [[redirects]]
   from = "/*"
