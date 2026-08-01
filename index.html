@@ -223,21 +223,48 @@
       white-space: nowrap !important;  /* 維持單行(不換行);靠加寬欄位讓長標籤放得下 */
     }
 
-    /* ── #7 微互動回饋:全站一致的 hover / 過渡 ───────────────── */
-    .ant-card { transition: box-shadow .22s ease, border-color .22s ease; }
-    /* 內容卡 hover 時陰影加深(濾掉貼頂的篩選列，避免捲動時抖動) */
-    .ant-card:not(.sticky-filters):hover { box-shadow: 0 6px 18px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.04); }
-    body.nc-dark .ant-card:not(.sticky-filters):hover { box-shadow: 0 8px 22px rgba(0,0,0,0.5); }
-    /* 可點標籤:輕微浮起 + 陰影，明確「可按」 */
-    .ant-tag { transition: transform .15s ease, box-shadow .15s ease, filter .15s ease; }
+    /* ── #7 物理感微動畫 (Spring Micro-Interactions & Spring Physics) ───────────────── */
+    /* 全域 spring physics 曲線: cubic-bezier(0.16, 1, 0.3, 1) */
+    .ant-card:not(.sticky-filters) {
+      transition: transform .28s cubic-bezier(0.16, 1, 0.3, 1), box-shadow .28s cubic-bezier(0.16, 1, 0.3, 1), border-color .28s ease, background-color .3s ease !important;
+    }
+    /* 內容卡 hover 時輕微浮起與層次微陰影 */
+    .ant-card:not(.sticky-filters):hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.08), 0 2px 6px -1px rgba(0, 0, 0, 0.04) !important;
+    }
+    body.nc-dark .ant-card:not(.sticky-filters):hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.55) !important;
+    }
+
+    /* 可點標籤:彈性微浮起與放大回饋 */
+    .ant-tag, .custom-tag { transition: transform .22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow .22s ease, filter .22s ease !important; }
     .custom-tag, .ant-tag[style*="cursor: pointer"], .ant-tag[style*="cursor:pointer"] { cursor: pointer; }
     .custom-tag:hover,
     .ant-tag[style*="cursor: pointer"]:hover,
-    .ant-tag[style*="cursor:pointer"]:hover { transform: translateY(-1px); box-shadow: 0 3px 8px rgba(0,0,0,0.12); }
-    /* 按鈕與表格列:統一過渡 */
-    .ant-btn { transition: all .18s ease !important; }
-    .ant-table-tbody > tr { transition: background-color .15s ease; }
-    .ant-segmented-item { transition: color .15s ease, background .15s ease; }
+    .ant-tag[style*="cursor:pointer"]:hover {
+      transform: translateY(-2px) scale(1.02);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12) !important;
+    }
+
+    /* 按鈕:微過渡與點擊微彈縮回饋 (Spring Click) */
+    .ant-btn { transition: transform .18s cubic-bezier(0.16, 1, 0.3, 1), background-color .22s ease, border-color .22s ease, box-shadow .22s ease, color .18s ease !important; }
+    .ant-btn:active { transform: scale(0.97) translateY(1px) !important; }
+
+    /* 表格列與選單項過渡 */
+    .ant-table-tbody > tr { transition: background-color .2s cubic-bezier(0.16, 1, 0.3, 1) !important; }
+    .ant-segmented-item { transition: color .2s ease, background .2s ease, transform .2s cubic-bezier(0.16, 1, 0.3, 1) !important; }
+
+    /* Tooltip / Popover 彈出動畫柔化 */
+    .ant-tooltip, .ant-popover {
+      animation-duration: .22s !important;
+      animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1) !important;
+    }
+    .ant-popover-inner, .ant-dropdown-menu, .ant-modal-content {
+      transition: transform .28s cubic-bezier(0.16, 1, 0.3, 1), opacity .28s cubic-bezier(0.16, 1, 0.3, 1), box-shadow .28s ease !important;
+    }
+
     /* 全域訊息(message)icon 改用莫蘭迪色(靜態 message 不吃 ConfigProvider 主題);用 icon 類名鎖定最穩 */
     .ant-message .anticon-check-circle { color: var(--jp-green) !important; }
     .ant-message .anticon-info-circle { color: var(--jp-blue) !important; }
@@ -248,6 +275,7 @@
     .ant-message-info .anticon { color: var(--jp-blue) !important; }
     .ant-message-warning .anticon { color: var(--jp-yellow) !important; }
     .ant-message-error .anticon { color: var(--jp-pink) !important; }
+
     /* 深色/淺色切換:主要面板的底色·邊框·文字平滑漸變，避免硬跳(圖表為 canvas 不受影響) */
     body, .ant-layout, .ant-card, .ant-card-head, .ant-table, .ant-table-thead > tr > th,
     .ant-table-tbody > tr > td, .ant-segmented, .ant-modal-content, .ant-input,
