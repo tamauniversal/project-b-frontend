@@ -6476,7 +6476,13 @@ function App() {
       } catch (e) {}
       if (resp.ok && d.success && d.result) {
         setAeoScanResult(d.result);
-        if (useLlm) message.success(d.result.llm_used ? '已用 AI(Gemini)優化文案' : 'AI 文案未生成(可能金鑰未設或額度不足)');
+        if (useLlm) {
+          if (d.result.llm_used) {
+            message.success('已使用 AI (Gemini) 完成文案與 JSON-LD 最佳化');
+          } else {
+            message.info('已成功產生標準 JSON-LD 標籤（平台預設 LLM 額度不足時，可至右上角「LLM 串接設定」帶入個人金鑰）', 6);
+          }
+        }
       } else if (d.code === 'TRIAL_LOCKED') {
         message.warning(d.message);
       } else if (resp.status === 404) {
