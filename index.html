@@ -13782,7 +13782,7 @@ function App() {
             alignItems: 'center',
             gap: 5,
             fontSize: '0.72rem',
-            color: 'var(--text-muted)',
+            color: isFocus ? 'var(--text-main)' : 'var(--text-muted)',
             opacity: muted ? 0.45 : 1,
             fontWeight: isFocus ? 700 : 400
           }
@@ -13998,6 +13998,8 @@ function App() {
         const ov = s[otherKey];
         const prev = idx > 0 ? tlSeries[s.key][tlMetric][idx - 1] : null;
         const d = prev == null ? null : Math.round(v - prev);
+        const focusBank = aioTargetBank && aioTargetBank !== '全部標的' ? aioTargetBank : null;
+        const isFocus = focusBank && s.key === focusBank;
         return React.createElement("div", {
           key: s.key,
           style: {
@@ -14005,13 +14007,14 @@ function App() {
             alignItems: 'center',
             gap: 8,
             padding: '7px 4px',
-            borderBottom: '1px solid var(--hairline)'
+            borderBottom: '1px solid var(--hairline)',
+            background: isFocus ? 'rgba(0,0,0,0.02)' : 'transparent'
           }
         }, React.createElement("span", {
           style: {
             width: 18,
             fontSize: '0.72rem',
-            color: i < 3 ? mainColor : 'var(--text-light)',
+            color: isFocus ? NC.focus : i < 3 ? mainColor : 'var(--text-light)',
             fontWeight: 700,
             textAlign: 'center'
           }
@@ -14020,8 +14023,8 @@ function App() {
           style: {
             flex: 1,
             fontSize: '0.8rem',
-            fontWeight: 500,
-            color: 'var(--text-main)',
+            fontWeight: isFocus ? 600 : 500,
+            color: isFocus ? NC.focus : 'var(--text-main)',
             overflow: 'hidden',
             textOverflow: 'ellipsis',
             whiteSpace: 'nowrap'
@@ -14048,7 +14051,7 @@ function App() {
             display: 'block',
             width: v + '%',
             height: '100%',
-            background: mainColor,
+            background: isFocus ? NC.focus : mainColor,
             borderRadius: 4
           }
         })), React.createElement("strong", {
@@ -14057,7 +14060,7 @@ function App() {
             textAlign: 'right',
             fontSize: '0.8rem',
             fontFamily: 'Roboto, monospace',
-            color: mainColor
+            color: isFocus ? NC.focus : mainColor
           }
         }, v, "%")), React.createElement("span", {
           style: {
