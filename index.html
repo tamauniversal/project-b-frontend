@@ -1367,6 +1367,178 @@ function App() {
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [feedbackText, setFeedbackText] = useState('');
   const [feedbackBusy, setFeedbackBusy] = useState(false);
+  const [emailSchedOpen, setEmailSchedOpen] = useState(false);
+  const [schedList, setSchedList] = useState([]);
+  const [schedLoading, setSchedLoading] = useState(false);
+  const [schedFormMode, setSchedFormMode] = useState('list');
+  const [editingSchedId, setEditingSchedId] = useState(null);
+  const [formSchedName, setFormSchedName] = useState('高層戰略週報');
+  const [formReportType, setFormReportType] = useState('1');
+  const [formFreq, setFormFreq] = useState('weekly');
+  const [formSendTime, setFormSendTime] = useState('09:00');
+  const [formWeeklyDay, setFormWeeklyDay] = useState(1);
+  const [formMonthlyDay, setFormMonthlyDay] = useState(1);
+  const [formRecipients, setFormRecipients] = useState('');
+  const [formCcRecipients, setFormCcRecipients] = useState('');
+  const [formSubjectPrefix, setFormSubjectPrefix] = useState('[數位戰略雷達]');
+  const [formEnabled, setFormEnabled] = useState(true);
+  const [testingId, setTestingId] = useState(null);
+  const [savingSched, setSavingSched] = useState(false);
+  const fetchSchedules = () => {
+    setSchedLoading(true);
+    fetch('/api/email-schedules').then(r => r.json()).then(d => {
+      setSchedLoading(false);
+      if (d && d.success) {
+        setSchedList(d.schedules || []);
+      }
+    }).catch(() => setSchedLoading(false));
+  };
+  useEffect(() => {
+    if (emailSchedOpen) {
+      fetchSchedules();
+    }
+  }, [emailSchedOpen]);
+  const openCreateSchedule = () => {
+    setEditingSchedId(null);
+    setFormSchedName('高層戰略週報');
+    setFormReportType('1');
+    setFormFreq('weekly');
+    setFormSendTime('09:00');
+    setFormWeeklyDay(1);
+    setFormMonthlyDay(1);
+    setFormRecipients(authUser ? authUser.email || '' : '');
+    setFormCcRecipients('');
+    setFormSubjectPrefix('[數位戰略雷達]');
+    setFormEnabled(true);
+    setSchedFormMode('create');
+  };
+  const openEditSchedule = item => {
+    setEditingSchedId(item.id);
+    setFormSchedName(item.name || '');
+    setFormReportType(item.report_type || '1');
+    setFormFreq(item.freq || 'weekly');
+    setFormSendTime(item.send_time || '09:00');
+    setFormWeeklyDay(item.weekly_day || 1);
+    setFormMonthlyDay(item.monthly_day || 1);
+    setFormRecipients((item.recipients || []).join(', '));
+    setFormCcRecipients((item.cc_recipients || []).join(', '));
+    setFormSubjectPrefix(item.subject_prefix || '[數位戰略雷達]');
+    setFormEnabled(item.enabled !== false);
+    setSchedFormMode('edit');
+  };
+  const saveScheduleItem = () => {
+    if (!formSchedName.trim()) {
+      message.warning('請填寫排程名稱');
+      return;
+    }
+    if (!formRecipients.trim()) {
+      message.warning('請至少輸入一位收件人 Email');
+      return;
+    }
+    setSavingSched(true);
+    const payload = {
+      id: editingSchedId,
+      name: formSchedName.trim(),
+      report_type: formReportType,
+      freq: formFreq,
+      send_time: formSendTime,
+      weekly_day: formWeeklyDay,
+      monthly_day: formMonthlyDay,
+      recipients: formRecipients,
+      cc_recipients: formCcRecipients,
+      subject_prefix: formSubjectPrefix,
+      enabled: formEnabled
+    };
+    const url = editingSchedId ? '/api/email-schedules/update' : '/api/email-schedules/create';
+    fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    }).then(r => r.json()).then(d => {
+      setSavingSched(false);
+      if (d && d.success) {
+        message.success(editingSchedId ? '排程更新成功！' : '排程建立成功！');
+        setSchedFormMode('list');
+        fetchSchedules();
+      } else {
+        message.error(d && d.message || '儲存排程失敗');
+      }
+    }).catch(e => {
+      setSavingSched(false);
+      message.error('儲存排程發生錯誤: ' + e);
+    });
+  };
+  const toggleScheduleState = (item, checked) => {
+    fetch('/api/email-schedules/update', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        id: item.id,
+        enabled: checked
+      })
+    }).then(r => r.json()).then(d => {
+      if (d && d.success) {
+        message.success(checked ? '已啟用排程' : '已停用排程');
+        fetchSchedules();
+      }
+    });
+  };
+  const deleteScheduleItem = item => {
+    Modal.confirm({
+      title: `確認刪除排程「${item.name}」?`,
+      content: '刪除後將不再依排程發送自動戰報。',
+      okText: '確認刪除',
+      okButtonProps: {
+        danger: true
+      },
+      cancelText: '取消',
+      onOk: () => {
+        fetch('/api/email-schedules/delete', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            id: item.id
+          })
+        }).then(r => r.json()).then(d => {
+          if (d && d.success) {
+            message.success('排程已刪除');
+            fetchSchedules();
+          }
+        });
+      }
+    });
+  };
+  const testSendSchedule = item => {
+    setTestingId(item.id);
+    fetch('/api/email-schedules/test', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        recipients: item.recipients,
+        cc_recipients: item.cc_recipients,
+        report_type: item.report_type,
+        subject_prefix: item.subject_prefix
+      })
+    }).then(r => r.json()).then(d => {
+      setTestingId(null);
+      if (d && d.success) {
+        message.success('🎉 測試戰報已成功寄出！請至收件匣確認。');
+      } else {
+        message.error(d && d.message || '測試寄送失敗，請確認後端 SMTP 設定。');
+      }
+    }).catch(e => {
+      setTestingId(null);
+      message.error('測試寄送失敗: ' + e);
+    });
+  };
   const isProjectB = typeof window !== 'undefined' && (window.location.hostname.includes('netlify') || window.IS_PROJECT_B);
   const [publicView, setPublicView] = useState(isProjectB ? 'auth' : 'free');
   useEffect(() => {
@@ -10232,16 +10404,16 @@ function App() {
       justifyContent: 'flex-end',
       minWidth: 160
     }
-  }, authUser.role === 'admin' && React.createElement(Tooltip, {
-    title: "\u5BC4\u9001\u76EE\u524D\u4E3B\u8996\u89D2/\u5E73\u53F0\u7684\u7248\u672C\u8207\u8F3F\u60C5\u5831\u8868 Email"
+  }, React.createElement(Tooltip, {
+    title: "\u8A2D\u5B9A\u8207\u7BA1\u7406\u9031\u671F\u6027\u81EA\u52D5 Email \u5831\u8868\u5BC4\u9001\u6392\u7A0B (CRUD)"
   }, React.createElement(Button, {
-    onClick: emailReport,
+    onClick: () => setEmailSchedOpen(true),
     icon: React.createElement("span", {
       style: {
         fontSize: '0.95rem'
       }
-    }, "\u2709")
-  }, "Email \u5831\u8868")), (view === 'aio_matrix' ? !isTrial : authUser.role === 'admin') && React.createElement(Tooltip, {
+    }, "\uD83D\uDCE7")
+  }, "\u9031\u671F Email \u5BC4\u9001\u7BA1\u7406")), (view === 'aio_matrix' ? !isTrial : authUser.role === 'admin') && React.createElement(Tooltip, {
     title: view === 'aio_matrix' ? '重爬本頁所有監測中的關鍵字(Google AIO 引用 + AEO)' : '重新爬取並更新全公司 App 版本/輿情資料(僅管理員)'
   }, React.createElement(Button, {
     shape: "circle",
@@ -17709,7 +17881,439 @@ function App() {
       whiteSpace: 'nowrap',
       flexShrink: 0
     }
-  }, (feedbackText || '').length, " / 4000")))));
+  }, (feedbackText || '').length, " / 4000"))), React.createElement(Modal, {
+    title: React.createElement("div", {
+      style: {
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingRight: 24
+      }
+    }, React.createElement("div", {
+      style: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: 8
+      }
+    }, React.createElement("span", {
+      style: {
+        fontSize: '1.2rem'
+      }
+    }, "\uD83D\uDCE7"), React.createElement("span", {
+      style: {
+        fontWeight: 600,
+        fontSize: '1.05rem',
+        color: 'var(--text-main)'
+      }
+    }, schedFormMode === 'list' ? '週期性 Email 寄送管理' : schedFormMode === 'create' ? '新增自動寄送排程' : '編輯寄送排程')), schedFormMode !== 'list' && React.createElement(Button, {
+      size: "small",
+      onClick: () => setSchedFormMode('list')
+    }, "\u8FD4\u56DE\u6E05\u55AE")),
+    open: emailSchedOpen,
+    onCancel: () => {
+      setEmailSchedOpen(false);
+      setSchedFormMode('list');
+    },
+    footer: schedFormMode === 'list' ? [React.createElement(Button, {
+      key: "close",
+      onClick: () => setEmailSchedOpen(false)
+    }, "\u95DC\u9589"), React.createElement(Button, {
+      key: "instant",
+      icon: React.createElement("span", null, "\u2709"),
+      onClick: () => {
+        setEmailSchedOpen(false);
+        emailReport();
+      }
+    }, "\u4E00\u9375\u5BC4\u51FA\u7576\u524D\u5831\u8868"), React.createElement(Button, {
+      key: "create",
+      type: "primary",
+      icon: React.createElement("span", null, "+"),
+      style: {
+        background: 'var(--jp-blue)',
+        borderColor: 'var(--jp-blue)'
+      },
+      onClick: openCreateSchedule
+    }, "\u65B0\u589E\u81EA\u52D5\u6392\u7A0B")] : [React.createElement(Button, {
+      key: "cancel",
+      onClick: () => setSchedFormMode('list')
+    }, "\u53D6\u6D88"), React.createElement(Button, {
+      key: "save",
+      type: "primary",
+      loading: savingSched,
+      style: {
+        background: 'var(--jp-blue)',
+        borderColor: 'var(--jp-blue)'
+      },
+      onClick: saveScheduleItem
+    }, "\u5132\u5B58\u6392\u7A0B")],
+    width: 720,
+    centered: true
+  }, schedFormMode === 'list' ? React.createElement("div", null, React.createElement("div", {
+    style: {
+      fontSize: '0.8rem',
+      color: 'var(--text-muted)',
+      marginBottom: 14,
+      lineHeight: 1.6,
+      background: 'var(--surface-1)',
+      padding: '10px 14px',
+      borderRadius: 8,
+      border: '1px solid var(--border-color)'
+    }
+  }, "\uD83D\uDCA1 ", React.createElement("b", null, "\u6A21\u7D44\u5316\u81EA\u52D5\u767C\u9001"), "\uFF1A\u8A2D\u5B9A\u6392\u7A0B\u5F8C\uFF0C\u5F8C\u7AEF\u7CFB\u7D71\u5C07\u4F9D\u6307\u5B9A\u983B\u7387\uFF08\u6BCF\u65E5/\u6BCF\u9031/\u6BCF\u6708\uFF09\u81EA\u52D5\u5C07\u7CBE\u7F8E\u7684 HTML \u6230\u5831\u622A\u5716\u5BC4\u81F3\u60A8\u6216\u5718\u968A\u6210\u54E1\u7684\u96FB\u5B50\u4FE1\u7BB1\u3002"), schedLoading ? React.createElement("div", {
+    style: {
+      textAlign: 'center',
+      padding: '40px 0',
+      color: 'var(--text-muted)'
+    }
+  }, "\u8F09\u5165\u6392\u7A0B\u6E05\u55AE\u4E2D...") : schedList.length === 0 ? React.createElement("div", {
+    style: {
+      textAlign: 'center',
+      padding: '36px 16px',
+      background: 'var(--surface-1)',
+      borderRadius: 10,
+      border: '1px dashed var(--border-color)'
+    }
+  }, React.createElement("div", {
+    style: {
+      fontSize: '2.2rem',
+      marginBottom: 8
+    }
+  }, "\uD83D\uDCEC"), React.createElement("div", {
+    style: {
+      fontWeight: 600,
+      color: 'var(--text-main)',
+      fontSize: '0.95rem'
+    }
+  }, "\u5C1A\u672A\u5EFA\u7ACB\u4EFB\u4F55\u81EA\u52D5\u5BC4\u9001\u6392\u7A0B"), React.createElement("div", {
+    style: {
+      fontSize: '0.8rem',
+      color: 'var(--text-muted)',
+      marginTop: 4,
+      marginBottom: 16
+    }
+  }, "\u60A8\u53EF\u4EE5\u65B0\u589E\u6BCF\u9031\u6230\u5831\u3001\u6BCF\u65E5\u8B66\u5831\u6216\u6BCF\u6708\u7BA1\u7406\u968E\u5C64\u6458\u8981"), React.createElement(Button, {
+    type: "primary",
+    style: {
+      background: 'var(--jp-blue)',
+      borderColor: 'var(--jp-blue)'
+    },
+    onClick: openCreateSchedule
+  }, "+ \u5EFA\u7ACB\u7B2C\u4E00\u500B\u767C\u9001\u6392\u7A0B")) : React.createElement("div", {
+    style: {
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 10
+    }
+  }, schedList.map(item => React.createElement("div", {
+    key: item.id,
+    style: {
+      background: 'var(--surface-1)',
+      border: '1px solid var(--border-color)',
+      borderRadius: 10,
+      padding: '14px 16px',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 12
+    }
+  }, React.createElement("div", {
+    style: {
+      flex: 1,
+      minWidth: 0
+    }
+  }, React.createElement("div", {
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: 8,
+      flexWrap: 'wrap',
+      marginBottom: 4
+    }
+  }, React.createElement("strong", {
+    style: {
+      fontSize: '0.95rem',
+      color: 'var(--text-main)'
+    }
+  }, item.name), React.createElement(Tag, {
+    color: item.report_type === '1' ? 'blue' : item.report_type === '2' ? 'green' : 'purple'
+  }, item.report_type === '1' ? 'AIO+AEO報表' : item.report_type === '2' ? 'App輿情矩陣' : '綜合全能戰報'), React.createElement(Tag, {
+    color: "cyan"
+  }, item.freq === 'daily' ? `每日 ${item.send_time}` : item.freq === 'weekly' ? `每週${['日', '一', '二', '三', '四', '五', '六'][item.weekly_day || 1]} ${item.send_time}` : `每月${item.monthly_day || 1}號 ${item.send_time}`)), React.createElement("div", {
+    style: {
+      fontSize: '0.78rem',
+      color: 'var(--text-muted)',
+      display: 'flex',
+      gap: 14,
+      flexWrap: 'wrap'
+    }
+  }, React.createElement("span", null, "\u6536\u4EF6\u4EBA: ", React.createElement("code", {
+    style: {
+      background: 'rgba(0,0,0,0.04)',
+      padding: '1px 5px',
+      borderRadius: 4
+    }
+  }, (item.recipients || []).join(', '))), item.cc_recipients && item.cc_recipients.length > 0 && React.createElement("span", null, "\u526F\u672C: ", React.createElement("code", {
+    style: {
+      background: 'rgba(0,0,0,0.04)',
+      padding: '1px 5px',
+      borderRadius: 4
+    }
+  }, item.cc_recipients.join(', ')))), React.createElement("div", {
+    style: {
+      fontSize: '0.72rem',
+      color: 'var(--text-light)',
+      marginTop: 4
+    }
+  }, "\u4E0A\u6B21\u767C\u9001: ", item.last_sent || '尚未發送', " \xB7 \u5EFA\u7ACB\u65BC ", item.created_at || '—')), React.createElement("div", {
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: 10,
+      flexShrink: 0
+    }
+  }, React.createElement(Switch, {
+    checked: item.enabled !== false,
+    onChange: v => toggleScheduleState(item, v),
+    checkedChildren: "\u555F\u7528",
+    unCheckedChildren: "\u505C\u7528",
+    size: "small"
+  }), React.createElement(Button, {
+    size: "small",
+    loading: testingId === item.id,
+    onClick: () => testSendSchedule(item),
+    icon: React.createElement("span", {
+      style: {
+        fontSize: '0.8rem'
+      }
+    }, "\u26A1")
+  }, "\u6E2C\u8A66\u767C\u9001"), React.createElement(Button, {
+    size: "small",
+    onClick: () => openEditSchedule(item)
+  }, "\u7DE8\u8F2F"), React.createElement(Button, {
+    size: "small",
+    danger: true,
+    onClick: () => deleteScheduleItem(item)
+  }, "\u522A\u9664")))))) : React.createElement("div", {
+    style: {
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 14,
+      padding: '4px 0'
+    }
+  }, React.createElement("div", null, React.createElement("label", {
+    style: {
+      fontSize: '0.82rem',
+      fontWeight: 600,
+      display: 'block',
+      marginBottom: 4,
+      color: 'var(--text-main)'
+    }
+  }, "\u6392\u7A0B\u540D\u7A31"), React.createElement(Input, {
+    placeholder: "\u4F8B: \u884C\u92B7\u5718\u968A\u9031\u5831\u3001\u9AD8\u5C64\u6230\u7565\u65E5\u5831",
+    value: formSchedName,
+    onChange: e => setFormSchedName(e.target.value)
+  })), React.createElement("div", {
+    style: {
+      display: 'flex',
+      gap: 12,
+      flexWrap: 'wrap'
+    }
+  }, React.createElement("div", {
+    style: {
+      flex: '1 1 200px'
+    }
+  }, React.createElement("label", {
+    style: {
+      fontSize: '0.82rem',
+      fontWeight: 600,
+      display: 'block',
+      marginBottom: 4,
+      color: 'var(--text-main)'
+    }
+  }, "\u5831\u8868\u5167\u5BB9\u985E\u578B"), React.createElement(Select, {
+    style: {
+      width: '100%'
+    },
+    value: formReportType,
+    onChange: v => setFormReportType(v)
+  }, React.createElement(Select.Option, {
+    value: "1"
+  }, "AIO \u6D41\u91CF\u7A7F\u900F\u8207 AEO \u5065\u6AA2\u5831\u8868"), React.createElement(Select.Option, {
+    value: "2"
+  }, "App \u66F4\u7248\u8F3F\u60C5\u77E9\u9663\u5831\u8868"), React.createElement(Select.Option, {
+    value: "3"
+  }, "\u7D9C\u5408\u5168\u80FD\u6578\u4F4D\u6230\u5831 (\u5168\u6A21\u7D44\u6574\u5408)"))), React.createElement("div", {
+    style: {
+      flex: '1 1 180px'
+    }
+  }, React.createElement("label", {
+    style: {
+      fontSize: '0.82rem',
+      fontWeight: 600,
+      display: 'block',
+      marginBottom: 4,
+      color: 'var(--text-main)'
+    }
+  }, "\u767C\u9001\u983B\u7387"), React.createElement(Select, {
+    style: {
+      width: '100%'
+    },
+    value: formFreq,
+    onChange: v => setFormFreq(v)
+  }, React.createElement(Select.Option, {
+    value: "daily"
+  }, "\u6BCF\u65E5\u767C\u9001"), React.createElement(Select.Option, {
+    value: "weekly"
+  }, "\u6BCF\u9031\u767C\u9001"), React.createElement(Select.Option, {
+    value: "monthly"
+  }, "\u6BCF\u6708\u767C\u9001")))), React.createElement("div", {
+    style: {
+      display: 'flex',
+      gap: 12,
+      flexWrap: 'wrap'
+    }
+  }, React.createElement("div", {
+    style: {
+      flex: '1 1 140px'
+    }
+  }, React.createElement("label", {
+    style: {
+      fontSize: '0.82rem',
+      fontWeight: 600,
+      display: 'block',
+      marginBottom: 4,
+      color: 'var(--text-main)'
+    }
+  }, "\u767C\u9001\u6642\u9593 (24\u5C0F\u6642\u5236)"), React.createElement(Select, {
+    style: {
+      width: '100%'
+    },
+    value: formSendTime,
+    onChange: v => setFormSendTime(v)
+  }, ['08:00', '08:30', '09:00', '09:30', '10:00', '11:00', '12:00', '14:00', '17:00', '18:00', '20:00'].map(t => React.createElement(Select.Option, {
+    key: t,
+    value: t
+  }, t)))), formFreq === 'weekly' && React.createElement("div", {
+    style: {
+      flex: '1 1 140px'
+    }
+  }, React.createElement("label", {
+    style: {
+      fontSize: '0.82rem',
+      fontWeight: 600,
+      display: 'block',
+      marginBottom: 4,
+      color: 'var(--text-main)'
+    }
+  }, "\u6307\u5B9A\u661F\u671F"), React.createElement(Select, {
+    style: {
+      width: '100%'
+    },
+    value: formWeeklyDay,
+    onChange: v => setFormWeeklyDay(v)
+  }, React.createElement(Select.Option, {
+    value: 1
+  }, "\u6BCF\u9031\u4E00"), React.createElement(Select.Option, {
+    value: 2
+  }, "\u6BCF\u9031\u4E8C"), React.createElement(Select.Option, {
+    value: 3
+  }, "\u6BCF\u9031\u4E09"), React.createElement(Select.Option, {
+    value: 4
+  }, "\u6BCF\u9031\u56DB"), React.createElement(Select.Option, {
+    value: 5
+  }, "\u6BCF\u9031\u4E94"), React.createElement(Select.Option, {
+    value: 6
+  }, "\u6BCF\u9031\u516D"), React.createElement(Select.Option, {
+    value: 0
+  }, "\u6BCF\u9031\u65E5"))), formFreq === 'monthly' && React.createElement("div", {
+    style: {
+      flex: '1 1 140px'
+    }
+  }, React.createElement("label", {
+    style: {
+      fontSize: '0.82rem',
+      fontWeight: 600,
+      display: 'block',
+      marginBottom: 4,
+      color: 'var(--text-main)'
+    }
+  }, "\u6307\u5B9A\u6BCF\u6708\u5E7E\u865F"), React.createElement(Select, {
+    style: {
+      width: '100%'
+    },
+    value: formMonthlyDay,
+    onChange: v => setFormMonthlyDay(v)
+  }, Array.from({
+    length: 31
+  }, (_, i) => i + 1).map(d => React.createElement(Select.Option, {
+    key: d,
+    value: d
+  }, "\u6BCF\u6708 ", d, " \u865F")))), React.createElement("div", {
+    style: {
+      flex: '2 1 200px'
+    }
+  }, React.createElement("label", {
+    style: {
+      fontSize: '0.82rem',
+      fontWeight: 600,
+      display: 'block',
+      marginBottom: 4,
+      color: 'var(--text-main)'
+    }
+  }, "Email \u4E3B\u65E8\u958B\u982D\u524D\u7DB4"), React.createElement(Input, {
+    placeholder: "\u4F8B: [\u4E2D\u570B\u4FE1\u8A17] \u6216 [\u6230\u7565\u96F7\u9054]",
+    value: formSubjectPrefix,
+    onChange: e => setFormSubjectPrefix(e.target.value)
+  }))), React.createElement("div", null, React.createElement("label", {
+    style: {
+      fontSize: '0.82rem',
+      fontWeight: 600,
+      display: 'block',
+      marginBottom: 4,
+      color: 'var(--text-main)'
+    }
+  }, "\u4E3B\u8981\u6536\u4EF6\u4EBA Email (\u591A\u500B\u4EE5\u9017\u865F\u6216\u5206\u884C\u9694\u958B)"), React.createElement(Input.TextArea, {
+    autoSize: {
+      minRows: 2,
+      maxRows: 4
+    },
+    placeholder: "user1@company.com, user2@company.com",
+    value: formRecipients,
+    onChange: e => setFormRecipients(e.target.value)
+  })), React.createElement("div", null, React.createElement("label", {
+    style: {
+      fontSize: '0.82rem',
+      fontWeight: 600,
+      display: 'block',
+      marginBottom: 4,
+      color: 'var(--text-main)'
+    }
+  }, "\u526F\u672C (CC) Email (\u9078\u586B)"), React.createElement(Input.TextArea, {
+    autoSize: {
+      minRows: 1,
+      maxRows: 3
+    },
+    placeholder: "boss@company.com",
+    value: formCcRecipients,
+    onChange: e => setFormCcRecipients(e.target.value)
+  })), React.createElement("div", {
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 10,
+      paddingTop: 4
+    }
+  }, React.createElement("span", {
+    style: {
+      fontSize: '0.85rem',
+      fontWeight: 600,
+      color: 'var(--text-main)'
+    }
+  }, "\u5EFA\u7ACB\u5F8C\u7ACB\u5373\u555F\u7528\u6392\u7A0B"), React.createElement(Switch, {
+    checked: formEnabled,
+    onChange: v => setFormEnabled(v)
+  }))))));
 }
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(React.createElement(ErrorBoundary, null, React.createElement(App, null)));
