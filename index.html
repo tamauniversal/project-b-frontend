@@ -15415,7 +15415,197 @@ function App() {
         color: 'var(--text-light)',
         fontSize: '0.8rem'
       }
-    }, "\u5C1A\u7121 AI \u5370\u8C61\u8CBC\u6A19(\u91CD\u6E2C LLM \u6EF2\u900F\u7387\u5F8C\u7522\u751F)\u3002\u54C1\u724C\u89C0\u611F\u8DA8\u52E2\u8ACB\u898B\u300CApp \u66F4\u7248\u8F3F\u60C5\u300D\u9801\u3002")))), qHd('競品搶走哪些版位?', 'AIO 引用缺口 · LLM 大腦缺口 · 整合待辦', focus && (gaps.length > 0 || llmGaps.length > 0) ? React.createElement("span", {
+    }, "\u5C1A\u7121 AI \u5370\u8C61\u8CBC\u6A19(\u91CD\u6E2C LLM \u6EF2\u900F\u7387\u5F8C\u7522\u751F)\u3002\u54C1\u724C\u89C0\u611F\u8DA8\u52E2\u8ACB\u898B\u300CApp \u66F4\u7248\u8F3F\u60C5\u300D\u9801\u3002")))), React.createElement(Row, {
+      gutter: [24, 12],
+      style: {
+        marginTop: 16
+      }
+    }, React.createElement(Col, {
+      xs: 24,
+      md: 24
+    }, secHd('AI 最愛引用媒體與論壇排行榜', '(各大 AI 搜尋引擎最常引用的權威媒體、論壇與社群 Top 8)', '統計 Google AIO 與 ChatGPT 回應中引用頻率最高的外部第三方網域，指出公關 (PR) 與內容/口碑團隊應優先佈局語料的外部戰場。'), React.createElement(Card, {
+      size: "small",
+      style: {
+        boxShadow: 'var(--shadow-material)',
+        borderRadius: 10,
+        background: 'var(--surface-1)',
+        border: '1px solid var(--border-color)'
+      }
+    }, (() => {
+      const rows = aioMatrixRows || [];
+      const domainMap = {};
+      rows.forEach(r => {
+        (r.breakdown || []).forEach(b => {
+          const url = b.url || b.name || '';
+          if (url) {
+            let domain = '';
+            try {
+              if (url.startsWith('http://') || url.startsWith('https://')) {
+                domain = new URL(url).hostname.replace(/^www\./, '');
+              } else if (url.includes('.')) {
+                domain = url.split('/')[0].replace(/^www\./, '');
+              }
+            } catch (e) {}
+            if (domain && !domain.includes('localhost')) {
+              if (!domainMap[domain]) {
+                domainMap[domain] = {
+                  domain,
+                  count: 0,
+                  keywords: new Set(),
+                  sampleUrl: url
+                };
+              }
+              domainMap[domain].count += b.count || 1;
+              domainMap[domain].keywords.add(r.keyword);
+            }
+          }
+        });
+      });
+      const classifyDomain = dom => {
+        const d = dom.toLowerCase();
+        if (d.includes('mobile01') || d.includes('ptt') || d.includes('dcard') || d.includes('bahamut') || d.includes('threads') || d.includes('facebook') || d.includes('youtube')) {
+          return {
+            type: '社群論壇',
+            color: '#e67e22',
+            bg: '#fdf2e9',
+            action: '適合口碑與論壇內容置入'
+          };
+        }
+        if (d.includes('bnext') || d.includes('businessweekly') || d.includes('cnyes') || d.includes('udn') || d.includes('chinatimes') || d.includes('ettoday') || d.includes('ebc') || d.includes('techbang') || d.includes('technews')) {
+          return {
+            type: '新聞財經',
+            color: '#2980b9',
+            bg: '#ebf5fb',
+            action: '適合發布權威 PR 新聞稿'
+          };
+        }
+        return {
+          type: '專業機構',
+          color: '#27ae60',
+          bg: '#eafaf1',
+          action: '適合官網 AEO 結構化資料'
+        };
+      };
+      const sorted = Object.values(domainMap).sort((a, b) => b.count - a.count).slice(0, 8);
+      const maxCount = sorted.length ? sorted[0].count : 1;
+      if (!sorted.length) {
+        return React.createElement("div", {
+          style: {
+            padding: '16px 0',
+            color: 'var(--text-light)',
+            fontSize: '0.8rem',
+            textAlign: 'center'
+          }
+        }, "\u76EE\u524D\u5C1A\u7121\u5916\u90E8\u5F15\u7528\u7DB2\u57DF\u8CC7\u6599\uFF0C\u8ACB\u9EDE\u64CA\u300C\u91CD\u722C\u5168\u9801 AIO\u300D\u4EE5\u66F4\u65B0\u5F15\u7528\u6578\u64DA\u3002");
+      }
+      return React.createElement("div", {
+        style: {
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+          gap: 12,
+          padding: '4px 0'
+        }
+      }, sorted.map((item, idx) => {
+        const meta = classifyDomain(item.domain);
+        const kwCount = item.keywords.size;
+        const pct = Math.round(item.count / maxCount * 100);
+        return React.createElement("div", {
+          key: item.domain,
+          style: {
+            background: 'var(--surface-1)',
+            border: '1px solid var(--border-color)',
+            borderRadius: 8,
+            padding: '10px 12px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            gap: 6
+          }
+        }, React.createElement("div", {
+          style: {
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 8
+          }
+        }, React.createElement("div", {
+          style: {
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            minWidth: 0
+          }
+        }, React.createElement("span", {
+          style: {
+            fontSize: '0.78rem',
+            fontWeight: 700,
+            color: idx < 3 ? 'var(--jp-blue)' : 'var(--text-light)',
+            width: 18,
+            textAlign: 'center'
+          }
+        }, "#", idx + 1), React.createElement("strong", {
+          style: {
+            fontSize: '0.85rem',
+            color: 'var(--text-main)',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap'
+          }
+        }, item.domain)), React.createElement("span", {
+          style: {
+            fontSize: '0.66rem',
+            fontWeight: 600,
+            padding: '1px 7px',
+            borderRadius: 10,
+            color: meta.color,
+            background: meta.bg,
+            whiteSpace: 'nowrap'
+          }
+        }, meta.type)), React.createElement("div", {
+          style: {
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8
+          }
+        }, React.createElement("div", {
+          style: {
+            flex: 1,
+            height: 6,
+            background: 'var(--surface-2)',
+            borderRadius: 4,
+            overflow: 'hidden'
+          }
+        }, React.createElement("div", {
+          style: {
+            width: `${pct}%`,
+            height: '100%',
+            background: meta.color,
+            borderRadius: 4
+          }
+        })), React.createElement("span", {
+          style: {
+            fontSize: '0.72rem',
+            fontWeight: 600,
+            color: 'var(--text-main)',
+            fontFamily: 'Roboto, monospace'
+          }
+        }, item.count, " \u6B21\u5F15\u7528")), React.createElement("div", {
+          style: {
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            fontSize: '0.68rem',
+            color: 'var(--text-muted)',
+            paddingTop: 4,
+            borderTop: '1px dashed var(--hairline)'
+          }
+        }, React.createElement("span", null, "\u8986\u84CB ", React.createElement("strong", null, kwCount), " \u500B\u6230\u7565\u95DC\u9375\u5B57"), React.createElement("span", {
+          style: {
+            color: 'var(--text-light)'
+          }
+        }, "\uD83D\uDCA1 ", meta.action)));
+      }));
+    })()))), qHd('競品搶走哪些版位?', 'AIO 引用缺口 · LLM 大腦缺口 · 整合待辦', focus && (gaps.length > 0 || llmGaps.length > 0) ? React.createElement("span", {
       style: {
         display: 'inline-flex',
         alignItems: 'center',
