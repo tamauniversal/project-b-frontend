@@ -13074,8 +13074,14 @@ function App() {
       flex: 1,
       background: 'var(--hairline)'
     }
-  })), React.createElement(Row, {
-    gutter: [12, 12]
+  })), React.createElement("div", {
+    style: {
+      display: 'grid',
+      gridTemplateColumns: 'repeat(5, 1fr)',
+      gap: 14,
+      width: '100%',
+      marginBottom: 16
+    }
   }, (() => {
     const rows = aioMatrixRows;
     const targeted = aioTargetBank && aioTargetBank !== '全部標的';
@@ -13138,7 +13144,7 @@ function App() {
       deltaUp: false,
       desc: `我的品牌在全部 ${totalKeywords * 12 || 4835} 則回應中被提及 ${Math.round((totalKeywords * 12 || 4835) * ((avgPen || 14.4) / 100))} 次。`,
       spark: genSpark(avgPen || 14.4, -2.8),
-      sparkColor: '#5d9e69',
+      sparkColor: 'var(--jp-green)',
       upTopics: 0,
       downTopics: 5,
       tooltip: '各大 AI 搜尋大模型主動提及此品牌的佔比'
@@ -13149,7 +13155,7 @@ function App() {
       deltaUp: false,
       desc: `我的品牌在全部 ${totalKeywords * 8 || 4835} 個引用連結中被引用 ${Math.round((totalKeywords * 8 || 4835) * ((avgCov || 12.2) / 100))} 次。`,
       spark: genSpark(avgCov || 12.2, -0.8),
-      sparkColor: '#4981af',
+      sparkColor: 'var(--jp-blue)',
       upTopics: 2,
       downTopics: 3,
       tooltip: 'Google AIO 搜尋回應中官網連結被引用提及率'
@@ -13160,7 +13166,7 @@ function App() {
       deltaUp: false,
       desc: `我的品牌在 617 則相關回應中的平均情緒指數與好感度。`,
       spark: genSpark(0.7, -0.1),
-      sparkColor: '#4981af',
+      sparkColor: 'var(--jp-blue)',
       upTopics: 2,
       downTopics: 3,
       tooltip: 'LLM 對該品牌的綜合正面與負面觀感分數 (0~1)'
@@ -13171,7 +13177,7 @@ function App() {
       deltaUp: true,
       desc: `我的品牌在 16998 次品牌提及與引用機會中被提及概率。`,
       spark: genSpark(avgSoV || 4.4, 0.6),
-      sparkColor: '#4981af',
+      sparkColor: 'var(--jp-blue)',
       upTopics: 3,
       downTopics: 2,
       tooltip: 'AIO 引用率 × LLM 滲透率 各 50% 權重綜合 SoV'
@@ -13182,60 +13188,76 @@ function App() {
       deltaUp: true,
       desc: `我的品牌在 696 則相關回應中的首次提及與引用平均順位。`,
       spark: genSpark(2.9, 0.9),
-      sparkColor: '#4981af',
+      sparkColor: 'var(--jp-blue)',
       upTopics: 3,
       downTopics: 1,
       tooltip: 'AI 搜尋回應中，品牌第一次被提及的平均排名順位'
     }];
-    return cards.map((c, i) => React.createElement(Col, {
-      xs: 24,
-      sm: 12,
-      md: 4,
-      style: {
-        flex: '1 1 19%'
-      },
-      key: i
-    }, React.createElement(Card, {
-      size: "small",
+    return cards.map((c, i) => React.createElement("div", {
+      key: i,
       style: {
         height: '100%',
-        boxShadow: 'var(--shadow-material)',
-        borderRadius: 10,
         background: 'var(--surface-1)',
         border: '1px solid var(--border-color)',
-        padding: '4px'
+        borderRadius: 10,
+        padding: '12px 14px',
+        boxShadow: 'var(--shadow-material)',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-between'
       }
-    }, React.createElement("div", {
+    }, React.createElement("div", null, React.createElement("div", {
       style: {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        marginBottom: 2
+        marginBottom: 6
       }
     }, React.createElement("span", {
       style: {
-        fontSize: '0.8rem',
+        fontSize: '0.82rem',
         fontWeight: 600,
         color: 'var(--text-main)'
       }
     }, c.title), React.createElement(Tooltip, {
       title: c.tooltip
-    }, React.createElement("span", {
+    }, React.createElement("svg", {
+      viewBox: "0 0 24 24",
+      width: "13",
+      height: "13",
+      fill: "none",
+      stroke: "var(--text-light)",
+      strokeWidth: "2",
+      strokeLinecap: "round",
+      strokeLinejoin: "round",
       style: {
-        fontSize: '0.72rem',
-        color: 'var(--text-light)',
-        cursor: 'pointer'
+        cursor: 'pointer',
+        display: 'block'
       }
-    }, "\u24D8"))), React.createElement("div", {
+    }, React.createElement("circle", {
+      cx: "12",
+      cy: "12",
+      r: "10"
+    }), React.createElement("line", {
+      x1: "12",
+      y1: "16",
+      x2: "12",
+      y2: "12"
+    }), React.createElement("line", {
+      x1: "12",
+      y1: "8",
+      x2: "12.01",
+      y2: "8"
+    })))), React.createElement("div", {
       style: {
         display: 'flex',
         alignItems: 'baseline',
         gap: 6,
-        marginBottom: 2
+        marginBottom: 4
       }
     }, React.createElement("span", {
       style: {
-        fontSize: '1.42rem',
+        fontSize: '1.45rem',
         fontWeight: 700,
         color: 'var(--text-main)',
         fontFamily: 'Roboto, monospace'
@@ -13244,26 +13266,27 @@ function App() {
       style: {
         fontSize: '0.65rem',
         fontWeight: 600,
-        padding: '1px 5px',
+        padding: '1px 6px',
         borderRadius: 4,
-        background: c.deltaUp ? '#E8F3EC' : '#FBEAEA',
-        color: c.deltaUp ? '#4e6e58' : '#b5544f'
+        background: c.deltaUp ? 'var(--tint-green)' : 'var(--tint-pink)',
+        color: c.deltaUp ? 'var(--jp-green)' : 'var(--jp-pink)',
+        border: '1px solid ' + (c.deltaUp ? 'var(--tint-green-bd)' : 'var(--tint-pink-bd)')
       }
     }, c.delta)), React.createElement("div", {
       style: {
         fontSize: '0.65rem',
         color: 'var(--text-light)',
-        lineHeight: 1.3,
-        height: 28,
+        lineHeight: 1.35,
+        minHeight: 28,
         overflow: 'hidden'
       }
-    }, c.desc), renderSparklineSVG(c.spark, c.sparkColor), React.createElement("div", {
+    }, c.desc)), React.createElement("div", null, renderSparklineSVG(c.spark, c.sparkColor), React.createElement("div", {
       style: {
         display: 'flex',
         alignItems: 'center',
-        gap: 6,
-        marginTop: 3,
-        paddingTop: 3,
+        gap: 8,
+        marginTop: 4,
+        paddingTop: 4,
         borderTop: '1px dashed var(--hairline)',
         fontSize: '0.66rem'
       }
