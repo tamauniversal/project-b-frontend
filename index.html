@@ -10405,8 +10405,9 @@ function App() {
       minWidth: 160
     }
   }, React.createElement(Tooltip, {
-    title: "\u8A2D\u5B9A\u8207\u7BA1\u7406\u9031\u671F\u6027\u81EA\u52D5 Email \u5831\u8868\u5BC4\u9001\u6392\u7A0B (CRUD)"
+    title: "\u9031\u671F Email \u5BC4\u9001\u7BA1\u7406\u6392\u7A0B (CRUD)"
   }, React.createElement(Button, {
+    shape: "circle",
     onClick: () => setEmailSchedOpen(true),
     icon: React.createElement("svg", {
       viewBox: "0 0 24 24",
@@ -10425,7 +10426,7 @@ function App() {
     }), React.createElement("polyline", {
       points: "22,6 12,13 2,6"
     }))
-  }, "\u9031\u671F Email \u5BC4\u9001\u7BA1\u7406")), (view === 'aio_matrix' ? !isTrial : authUser.role === 'admin') && React.createElement(Tooltip, {
+  })), (view === 'aio_matrix' ? !isTrial : authUser.role === 'admin') && React.createElement(Tooltip, {
     title: view === 'aio_matrix' ? '重爬本頁所有監測中的關鍵字(Google AIO 引用 + AEO)' : '重新爬取並更新全公司 App 版本/輿情資料(僅管理員)'
   }, React.createElement(Button, {
     shape: "circle",
