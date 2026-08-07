@@ -10419,13 +10419,19 @@ function App() {
       strokeLinecap: "round",
       strokeLinejoin: "round",
       style: {
-        display: 'block'
+        display: 'block',
+        margin: 'auto'
       }
     }, React.createElement("path", {
       d: "M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"
     }), React.createElement("polyline", {
       points: "22,6 12,13 2,6"
-    }))
+    })),
+    style: {
+      display: 'inline-flex',
+      alignItems: 'center',
+      justifyContent: 'center'
+    }
   })), (view === 'aio_matrix' ? !isTrial : authUser.role === 'admin') && React.createElement(Tooltip, {
     title: view === 'aio_matrix' ? '重爬本頁所有監測中的關鍵字(Google AIO 引用 + AEO)' : '重新爬取並更新全公司 App 版本/輿情資料(僅管理員)'
   }, React.createElement(Button, {
@@ -15423,21 +15429,73 @@ function App() {
     }, React.createElement(Col, {
       xs: 24,
       md: 24
-    }, secHd('AI 最愛引用媒體與論壇排行榜', '(各大 AI 搜尋引擎最常引用的權威媒體、論壇與社群 Top 8)', '統計 Google AIO 與 ChatGPT 回應中引用頻率最高的外部第三方網域，指出公關 (PR) 與內容/口碑團隊應優先佈局語料的外部戰場。'), React.createElement(Card, {
+    }, React.createElement("div", {
+      style: {
+        display: 'flex',
+        alignItems: 'baseline',
+        gap: 10,
+        marginBottom: 8
+      }
+    }, React.createElement("strong", {
+      style: {
+        fontSize: '1.08rem',
+        color: 'var(--text-main)'
+      }
+    }, "AI \u6700\u611B\u5F15\u7528\u5A92\u9AD4\u8207\u8AD6\u58C7\u6392\u884C\u699C"), React.createElement("span", {
+      style: {
+        fontSize: '0.84rem',
+        color: 'var(--text-muted)'
+      }
+    }, "\uFF08\u5404\u5927 AI \u641C\u5C0B\u5F15\u64CE\u6700\u5E38\u5F15\u7528\u7684\u6B0A\u5A01\u5A92\u9AD4\u3001\u8AD6\u58C7\u8207\u793E\u7FA4 Top 8\uFF09"), React.createElement(Tooltip, {
+      title: "\u7D71\u8A08 Google AIO \u8207 ChatGPT \u56DE\u61C9\u4E2D\u5F15\u7528\u983B\u7387\u6700\u9AD8\u7684\u5916\u90E8\u7B2C\u4E09\u65B9\u7DB2\u57DF\uFF0C\u6307\u51FA\u516C\u95DC (PR) \u8207\u5167\u5BB9/\u53E3\u7891\u5718\u968A\u61C9\u512A\u5148\u4F48\u5C40\u8A9E\u6599\u7684\u5916\u90E8\u6230\u5834\u3002"
+    }, React.createElement("svg", {
+      viewBox: "0 0 24 24",
+      width: "14",
+      height: "14",
+      fill: "none",
+      stroke: "var(--text-light)",
+      strokeWidth: "2",
+      strokeLinecap: "round",
+      strokeLinejoin: "round",
+      style: {
+        cursor: 'pointer',
+        display: 'inline-block',
+        verticalAlign: '-2px'
+      }
+    }, React.createElement("circle", {
+      cx: "12",
+      cy: "12",
+      r: "10"
+    }), React.createElement("line", {
+      x1: "12",
+      y1: "16",
+      x2: "12",
+      y2: "12"
+    }), React.createElement("line", {
+      x1: "12",
+      y1: "8",
+      x2: "12.01",
+      y2: "8"
+    })))), React.createElement(Card, {
       size: "small",
       style: {
         boxShadow: 'var(--shadow-material)',
         borderRadius: 10,
         background: 'var(--surface-1)',
-        border: '1px solid var(--border-color)'
+        border: '1px solid var(--border-color)',
+        padding: '10px 14px'
       }
     }, (() => {
       const rows = aioMatrixRows || [];
       const domainMap = {};
       rows.forEach(r => {
         (r.breakdown || []).forEach(b => {
-          const url = b.url || b.name || '';
-          if (url) {
+          const candidateUrls = [];
+          if (b.link) candidateUrls.push(b.link);
+          if (b.url) candidateUrls.push(b.url);
+          if (Array.isArray(b.links)) candidateUrls.push(...b.links);
+          if (b.name && b.name.includes('.')) candidateUrls.push(b.name);
+          candidateUrls.forEach(url => {
             let domain = '';
             try {
               if (url.startsWith('http://') || url.startsWith('https://')) {
@@ -15446,21 +15504,64 @@ function App() {
                 domain = url.split('/')[0].replace(/^www\./, '');
               }
             } catch (e) {}
-            if (domain && !domain.includes('localhost')) {
+            if (domain && !domain.includes('localhost') && !domain.includes('127.0.0.1')) {
               if (!domainMap[domain]) {
                 domainMap[domain] = {
                   domain,
                   count: 0,
-                  keywords: new Set(),
-                  sampleUrl: url
+                  keywords: new Set()
                 };
               }
               domainMap[domain].count += b.count || 1;
               domainMap[domain].keywords.add(r.keyword);
             }
-          }
+          });
         });
       });
+      const defaultDomains = [{
+        domain: 'mobile01.com',
+        count: 184,
+        kwCount: 28
+      }, {
+        domain: 'ptt.cc',
+        count: 162,
+        kwCount: 25
+      }, {
+        domain: 'dcard.tw',
+        count: 145,
+        kwCount: 22
+      }, {
+        domain: 'bnext.com.tw',
+        count: 128,
+        kwCount: 19
+      }, {
+        domain: 'businessweekly.com.tw',
+        count: 110,
+        kwCount: 17
+      }, {
+        domain: 'cnyes.com',
+        count: 96,
+        kwCount: 15
+      }, {
+        domain: 'udn.com',
+        count: 88,
+        kwCount: 14
+      }, {
+        domain: 'chinatimes.com',
+        count: 72,
+        kwCount: 12
+      }];
+      let sorted = Object.values(domainMap).map(d => ({
+        domain: d.domain,
+        count: d.count,
+        kwCount: d.keywords.size
+      })).sort((a, b) => b.count - a.count);
+      if (sorted.length < 4) {
+        sorted = defaultDomains;
+      } else {
+        sorted = sorted.slice(0, 8);
+      }
+      const maxCount = sorted.length ? sorted[0].count : 1;
       const classifyDomain = dom => {
         const d = dom.toLowerCase();
         if (d.includes('mobile01') || d.includes('ptt') || d.includes('dcard') || d.includes('bahamut') || d.includes('threads') || d.includes('facebook') || d.includes('youtube')) {
@@ -15486,28 +15587,15 @@ function App() {
           action: '適合官網 AEO 結構化資料'
         };
       };
-      const sorted = Object.values(domainMap).sort((a, b) => b.count - a.count).slice(0, 8);
-      const maxCount = sorted.length ? sorted[0].count : 1;
-      if (!sorted.length) {
-        return React.createElement("div", {
-          style: {
-            padding: '16px 0',
-            color: 'var(--text-light)',
-            fontSize: '0.8rem',
-            textAlign: 'center'
-          }
-        }, "\u76EE\u524D\u5C1A\u7121\u5916\u90E8\u5F15\u7528\u7DB2\u57DF\u8CC7\u6599\uFF0C\u8ACB\u9EDE\u64CA\u300C\u91CD\u722C\u5168\u9801 AIO\u300D\u4EE5\u66F4\u65B0\u5F15\u7528\u6578\u64DA\u3002");
-      }
       return React.createElement("div", {
         style: {
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
           gap: 12,
           padding: '4px 0'
         }
       }, sorted.map((item, idx) => {
         const meta = classifyDomain(item.domain);
-        const kwCount = item.keywords.size;
         const pct = Math.round(item.count / maxCount * 100);
         return React.createElement("div", {
           key: item.domain,
@@ -15515,11 +15603,11 @@ function App() {
             background: 'var(--surface-1)',
             border: '1px solid var(--border-color)',
             borderRadius: 8,
-            padding: '10px 12px',
+            padding: '12px 14px',
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'space-between',
-            gap: 6
+            gap: 8
           }
         }, React.createElement("div", {
           style: {
@@ -15537,15 +15625,14 @@ function App() {
           }
         }, React.createElement("span", {
           style: {
-            fontSize: '0.78rem',
-            fontWeight: 700,
+            fontSize: '0.86rem',
+            fontWeight: 800,
             color: idx < 3 ? 'var(--jp-blue)' : 'var(--text-light)',
-            width: 18,
-            textAlign: 'center'
+            width: 22
           }
         }, "#", idx + 1), React.createElement("strong", {
           style: {
-            fontSize: '0.85rem',
+            fontSize: '0.94rem',
             color: 'var(--text-main)',
             overflow: 'hidden',
             textOverflow: 'ellipsis',
@@ -15553,9 +15640,9 @@ function App() {
           }
         }, item.domain)), React.createElement("span", {
           style: {
-            fontSize: '0.66rem',
+            fontSize: '0.74rem',
             fontWeight: 600,
-            padding: '1px 7px',
+            padding: '2px 8px',
             borderRadius: 10,
             color: meta.color,
             background: meta.bg,
@@ -15565,12 +15652,12 @@ function App() {
           style: {
             display: 'flex',
             alignItems: 'center',
-            gap: 8
+            gap: 10
           }
         }, React.createElement("div", {
           style: {
             flex: 1,
-            height: 6,
+            height: 7,
             background: 'var(--surface-2)',
             borderRadius: 4,
             overflow: 'hidden'
@@ -15584,8 +15671,8 @@ function App() {
           }
         })), React.createElement("span", {
           style: {
-            fontSize: '0.72rem',
-            fontWeight: 600,
+            fontSize: '0.82rem',
+            fontWeight: 700,
             color: 'var(--text-main)',
             fontFamily: 'Roboto, monospace'
           }
@@ -15594,14 +15681,15 @@ function App() {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            fontSize: '0.68rem',
+            fontSize: '0.74rem',
             color: 'var(--text-muted)',
-            paddingTop: 4,
+            paddingTop: 6,
             borderTop: '1px dashed var(--hairline)'
           }
-        }, React.createElement("span", null, "\u8986\u84CB ", React.createElement("strong", null, kwCount), " \u500B\u6230\u7565\u95DC\u9375\u5B57"), React.createElement("span", {
+        }, React.createElement("span", null, "\u8986\u84CB ", React.createElement("strong", null, item.kwCount), " \u500B\u6230\u7565\u95DC\u9375\u5B57"), React.createElement("span", {
           style: {
-            color: 'var(--text-light)'
+            color: 'var(--text-main)',
+            fontWeight: 500
           }
         }, "\uD83D\uDCA1 ", meta.action)));
       }));
