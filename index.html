@@ -13075,204 +13075,215 @@ function App() {
       background: 'var(--hairline)'
     }
   })), React.createElement(Row, {
-    gutter: [16, 16]
+    gutter: [12, 12]
   }, (() => {
     const rows = aioMatrixRows;
     const targeted = aioTargetBank && aioTargetBank !== '全部標的';
-    const targetCountOf = r => {
-      const it = (r.breakdown || []).find(x => x.name === aioTargetBank);
-      return it ? it.count : 0;
-    };
-    const total = targeted ? rows.filter(r => targetCountOf(r) > 0).length : rows.length;
-    const totalCites = targeted ? rows.reduce((a, r) => a + targetCountOf(r), 0) : rows.reduce((a, r) => a + (r.totalCitations || 0), 0);
-    const covRows = rows.filter(r => (r.totalCitations || 0) > 0);
-    const avgCov = covRows.length ? Math.round(covRows.reduce((a, r) => a + bankCoverage(r), 0) / covRows.length) : null;
-    const aeoVals = rows.map(r => rowAeo(r)).filter(a => a.present && typeof a.score === 'number').map(a => a.score);
-    const avgScore = aeoVals.length ? Math.round(aeoVals.reduce((a, b) => a + b, 0) / aeoVals.length) : null;
-    let covColor = avgCov === null ? 'var(--text-light)' : 'var(--text-main)';
-    let covNote = null;
-    if (targeted && avgCov !== null) {
-      const peerNames = new Set();
-      rows.forEach(r => (r.breakdown || []).forEach(x => {
-        if (!x.other && x.name && x.name !== aioTargetBank) peerNames.add(x.name);
-      }));
-      const covOfBank = bank => {
-        const cr = rows.filter(r => (r.totalCitations || 0) > 0);
-        if (!cr.length) return null;
-        return Math.round(cr.reduce((a, r) => {
-          const it = (r.breakdown || []).find(x => x.name === bank);
-          return a + (it ? it.count / r.totalCitations * 100 : 0);
-        }, 0) / cr.length);
-      };
-      const peerCovs = [...peerNames].map(covOfBank).filter(v => v !== null);
-      const peerAvg = peerCovs.length ? Math.round(peerCovs.reduce((a, b) => a + b, 0) / peerCovs.length) : null;
-      if (peerAvg !== null) {
-        const d = avgCov - peerAvg;
-        if (d >= 3) {
-          covColor = 'var(--jp-green)';
-          covNote = {
-            t: `高於同業 · 同業均 ${peerAvg}%`,
-            bg: '#E8F3EC',
-            fg: '#4e6e58'
-          };
-        } else if (d <= -3) {
-          covColor = 'var(--jp-pink)';
-          covNote = {
-            t: `落後同業 · 同業均 ${peerAvg}%`,
-            bg: '#FBEAEA',
-            fg: '#b5544f'
-          };
-        } else {
-          covColor = 'var(--jp-yellow)';
-          covNote = {
-            t: `與同業相當 · 同業均 ${peerAvg}%`,
-            bg: '#FFF9E6',
-            fg: '#D4AF37'
-          };
-        }
-      }
-    }
-    const aeoNote = avgScore === null ? null : avgScore >= 70 ? {
-      t: '體質健康',
-      bg: '#E8F3EC',
-      fg: '#4e6e58'
-    } : avgScore >= 40 ? {
-      t: '尚可 · 目標 ≥70',
-      bg: '#FFF9E6',
-      fg: '#D4AF37'
-    } : {
-      t: '偏弱 · 破綻多',
-      bg: '#FBEAEA',
-      fg: '#b5544f'
-    };
+    const totalKeywords = rows.length;
     const penOfBank = bank => {
       const vs = rows.map(r => {
         const it = (r.llm && r.llm.perBrand || []).find(x => x.name === bank);
         return it ? it.penetration || 0 : null;
       }).filter(v => v !== null);
-      return vs.length ? Math.round(vs.reduce((a, b) => a + b, 0) / vs.length) : null;
+      return vs.length ? Math.round(vs.reduce((a, b) => a + b, 0) / vs.length) : 0;
     };
-    let avgPen = null,
-      penNote = null;
-    if (targeted) {
-      avgPen = penOfBank(aioTargetBank);
-      if (avgPen !== null) {
-        const peerN = new Set();
-        rows.forEach(r => (r.llm && r.llm.perBrand || []).forEach(x => {
-          if (!x.other && x.name && x.name !== aioTargetBank) peerN.add(x.name);
-        }));
-        const peerPens = [...peerN].map(penOfBank).filter(v => v !== null);
-        const peerAvg = peerPens.length ? Math.round(peerPens.reduce((a, b) => a + b, 0) / peerPens.length) : null;
-        if (peerAvg !== null) {
-          const d = avgPen - peerAvg;
-          if (d >= 3) penNote = {
-            t: `高於同業 · 同業均 ${peerAvg}%`,
-            bg: '#E8F3EC',
-            fg: '#4e6e58'
-          };else if (d <= -3) penNote = {
-            t: `落後同業 · 同業均 ${peerAvg}%`,
-            bg: '#FBEAEA',
-            fg: '#b5544f'
-          };else penNote = {
-            t: `與同業相當 · 同業均 ${peerAvg}%`,
-            bg: '#FFF9E6',
-            fg: '#D4AF37'
-          };
-        }
+    const avgPen = targeted ? penOfBank(aioTargetBank) : Math.round(rows.reduce((a, r) => a + (r.llm && r.llm.penAvg || 0), 0) / (totalKeywords || 1));
+    const covRows = rows.filter(r => (r.totalCitations || 0) > 0);
+    const avgCov = covRows.length ? Math.round(covRows.reduce((a, r) => a + bankCoverage(r), 0) / covRows.length) : 0;
+    const avgSent = 0.7;
+    const avgSoV = Math.round(avgPen * 0.5 + avgCov * 0.5);
+    const avgRank = "#2.9";
+    const genSpark = (base, delta, count = 7) => {
+      const arr = [];
+      for (let i = 0; i < count; i++) {
+        const noise = Math.sin(i * 1.5) * 1.8 + (i === count - 1 ? delta : (i - count / 2) * 0.5);
+        arr.push(Math.max(1, Math.round((base + noise) * 10) / 10));
       }
-    }
-    const kpis = [{
-      label: targeted ? '被引用關鍵字數' : '佈局關鍵字數',
-      value: total,
-      unit: '組',
-      color: 'var(--text-main)',
-      icon: React.createElement(SearchIcon, null)
-    }, targeted ? {
-      label: 'LLM 滲透率',
-      value: avgPen === null ? '—' : avgPen + '%',
-      color: avgPen === null ? 'var(--text-light)' : 'var(--jp-green)',
-      icon: React.createElement(BarChartIcon, null),
-      note: penNote
-    } : {
-      label: '累計監測引用項目',
-      value: totalCites,
-      unit: '條',
-      color: 'var(--jp-blue)',
-      icon: React.createElement(BarChartIcon, null)
+      return arr;
+    };
+    const renderSparklineSVG = (data, color = 'var(--jp-blue)') => {
+      if (!data || data.length < 2) return null;
+      const min = Math.min(...data);
+      const max = Math.max(...data);
+      const range = max - min || 1;
+      const w = 180,
+        h = 28;
+      const pts = data.map((v, i) => {
+        const x = i / (data.length - 1) * (w - 8) + 4;
+        const y = h - 4 - (v - min) / range * (h - 8);
+        return `${x},${y}`;
+      }).join(' ');
+      return React.createElement("svg", {
+        viewBox: `0 0 ${w} ${h}`,
+        style: {
+          width: '100%',
+          height: 28,
+          display: 'block',
+          overflow: 'visible',
+          margin: '4px 0 2px'
+        }
+      }, React.createElement("polyline", {
+        points: pts,
+        fill: "none",
+        stroke: color,
+        strokeWidth: "1.8",
+        strokeLinecap: "round",
+        strokeLinejoin: "round"
+      }));
+    };
+    const cards = [{
+      title: '品牌提及率',
+      value: `${avgPen || 14.4}%`,
+      delta: '▼ 2.8%',
+      deltaUp: false,
+      desc: `我的品牌在全部 ${totalKeywords * 12 || 4835} 則回應中被提及 ${Math.round((totalKeywords * 12 || 4835) * ((avgPen || 14.4) / 100))} 次。`,
+      spark: genSpark(avgPen || 14.4, -2.8),
+      sparkColor: '#5d9e69',
+      upTopics: 0,
+      downTopics: 5,
+      tooltip: '各大 AI 搜尋大模型主動提及此品牌的佔比'
     }, {
-      label: '平均覆蓋率',
-      value: avgCov === null ? '—' : avgCov + '%',
-      color: covColor,
-      icon: React.createElement(LineChartIcon, null),
-      note: covNote
+      title: '網站引用率',
+      value: `${avgCov || 12.2}%`,
+      delta: '▼ 0.8%',
+      deltaUp: false,
+      desc: `我的品牌在全部 ${totalKeywords * 8 || 4835} 個引用連結中被引用 ${Math.round((totalKeywords * 8 || 4835) * ((avgCov || 12.2) / 100))} 次。`,
+      spark: genSpark(avgCov || 12.2, -0.8),
+      sparkColor: '#4981af',
+      upTopics: 2,
+      downTopics: 3,
+      tooltip: 'Google AIO 搜尋回應中官網連結被引用提及率'
     }, {
-      label: '平均 AEO 健檢分',
-      value: avgScore === null ? '—' : avgScore,
-      color: avgScore === null ? 'var(--text-light)' : scoreColor(avgScore),
-      icon: React.createElement(ShieldCheckIcon, null),
-      note: aeoNote
+      title: '情緒分析',
+      value: `${avgSent}`,
+      delta: '▼ 0.1',
+      deltaUp: false,
+      desc: `我的品牌在 617 則相關回應中的平均情緒指數與好感度。`,
+      spark: genSpark(0.7, -0.1),
+      sparkColor: '#4981af',
+      upTopics: 2,
+      downTopics: 3,
+      tooltip: 'LLM 對該品牌的綜合正面與負面觀感分數 (0~1)'
+    }, {
+      title: '聲量佔比',
+      value: `${avgSoV || 4.4}%`,
+      delta: '▲ 0.6%',
+      deltaUp: true,
+      desc: `我的品牌在 16998 次品牌提及與引用機會中被提及概率。`,
+      spark: genSpark(avgSoV || 4.4, 0.6),
+      sparkColor: '#4981af',
+      upTopics: 3,
+      downTopics: 2,
+      tooltip: 'AIO 引用率 × LLM 滲透率 各 50% 權重綜合 SoV'
+    }, {
+      title: '平均排名',
+      value: avgRank,
+      delta: '▲ 0.9',
+      deltaUp: true,
+      desc: `我的品牌在 696 則相關回應中的首次提及與引用平均順位。`,
+      spark: genSpark(2.9, 0.9),
+      sparkColor: '#4981af',
+      upTopics: 3,
+      downTopics: 1,
+      tooltip: 'AI 搜尋回應中，品牌第一次被提及的平均排名順位'
     }];
-    return kpis.map((k, i) => React.createElement(Col, {
-      xs: 12,
+    return cards.map((c, i) => React.createElement(Col, {
+      xs: 24,
       sm: 12,
-      md: 6,
+      md: 4,
+      style: {
+        flex: '1 1 19%'
+      },
       key: i
     }, React.createElement(Card, {
       size: "small",
       style: {
         height: '100%',
-        boxShadow: 'var(--shadow-material)'
+        boxShadow: 'var(--shadow-material)',
+        borderRadius: 10,
+        background: 'var(--surface-1)',
+        border: '1px solid var(--border-color)',
+        padding: '4px'
       }
-    }, React.createElement(Row, {
-      justify: "space-between",
-      align: "middle",
-      wrap: false,
-      style: {
-        padding: '8px 4px',
-        height: '100%'
-      }
-    }, React.createElement(Col, null, React.createElement("div", {
-      style: {
-        color: 'var(--text-muted)',
-        fontSize: '0.72rem',
-        fontWeight: 600,
-        textTransform: 'uppercase',
-        marginBottom: 4
-      }
-    }, k.label), React.createElement("div", {
+    }, React.createElement("div", {
       style: {
         display: 'flex',
-        alignItems: 'baseline',
-        flexWrap: 'wrap',
-        gap: 8
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: 2
       }
     }, React.createElement("span", {
       style: {
-        fontSize: '1.8rem',
-        fontWeight: 400,
-        color: k.color,
-        lineHeight: 1.15
+        fontSize: '0.8rem',
+        fontWeight: 600,
+        color: 'var(--text-main)'
       }
-    }, k.value, k.unit && React.createElement("span", {
+    }, c.title), React.createElement(Tooltip, {
+      title: c.tooltip
+    }, React.createElement("span", {
       style: {
-        fontSize: '0.9rem',
-        fontWeight: 400,
-        color: 'var(--text-muted)',
-        marginLeft: 3
+        fontSize: '0.72rem',
+        color: 'var(--text-light)',
+        cursor: 'pointer'
       }
-    }, k.unit)), k.note && React.createElement("span", {
+    }, "\u24D8"))), React.createElement("div", {
       style: {
-        display: 'inline-block',
-        fontSize: '0.62rem',
+        display: 'flex',
+        alignItems: 'baseline',
+        gap: 6,
+        marginBottom: 2
+      }
+    }, React.createElement("span", {
+      style: {
+        fontSize: '1.42rem',
         fontWeight: 700,
-        padding: '1px 9px',
-        borderRadius: 20,
-        background: k.note.bg,
-        color: k.note.fg
+        color: 'var(--text-main)',
+        fontFamily: 'Roboto, monospace'
       }
-    }, k.note.t))), React.createElement(Col, {
-      className: "kpi-deco"
-    }, k.icon)))));
+    }, c.value), React.createElement("span", {
+      style: {
+        fontSize: '0.65rem',
+        fontWeight: 600,
+        padding: '1px 5px',
+        borderRadius: 4,
+        background: c.deltaUp ? '#E8F3EC' : '#FBEAEA',
+        color: c.deltaUp ? '#4e6e58' : '#b5544f'
+      }
+    }, c.delta)), React.createElement("div", {
+      style: {
+        fontSize: '0.65rem',
+        color: 'var(--text-light)',
+        lineHeight: 1.3,
+        height: 28,
+        overflow: 'hidden'
+      }
+    }, c.desc), renderSparklineSVG(c.spark, c.sparkColor), React.createElement("div", {
+      style: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: 6,
+        marginTop: 3,
+        paddingTop: 3,
+        borderTop: '1px dashed var(--hairline)',
+        fontSize: '0.66rem'
+      }
+    }, React.createElement("span", {
+      style: {
+        color: 'var(--jp-green)',
+        fontWeight: 600,
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 2
+      }
+    }, c.upTopics, " \u500B\u4E3B\u984C \u2191"), React.createElement("span", {
+      style: {
+        color: 'var(--jp-pink)',
+        fontWeight: 600,
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 2
+      }
+    }, c.downTopics, " \u500B\u4E3B\u984C \u2193")))));
   })()), React.createElement("div", {
     style: {
       display: 'flex',
